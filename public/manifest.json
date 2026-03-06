@@ -1,0 +1,21 @@
+{
+    "name": "Chiffreo - Devis Électrique IA",
+    "short_name": "Chiffreo",
+    "description": "Générateur de devis électrique intelligent propulsé par MSConseil",
+    "start_url": "./",
+    "display": "standalone",
+    "background_color": "#f8fafc",
+    "theme_color": "#1e3a5f",
+    "orientation": "portrait-primary",
+    "scope": "./",
+    "lang": "fr-FR",
+    "categories": ["business", "productivity", "utilities"],
+    "icons": [
+        {
+            "src": "icons/logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1B4D3E">
+    <meta name="description" content="Dictez vos travaux, Chiffreo génère le devis. Grille tarifaire, TVA automatique, PDF pro. Essai gratuit 14 jours.">
+
+    <title>Chiffreo — Chiffrez vos chantiers à la voix</title>
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Chiffreo — Parlez, c'est chiffré">
+    <meta property="og:description" content="L'app qui transforme votre voix en devis professionnel. Pour les électriciens et pros du bâtiment.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="icons/og-image.png">
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/logo_chiffreo.png">
+    <link rel="icon" type="image/png" href="icons/logo_chiffreo.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
+
+    <link rel="stylesheet" href="css/landing.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="./" class="nav-logo">
+                <img src="icons/logo_chiffreo.png" alt="Chiffreo" class="nav-logo-img">
+                <span>Chiffreo</span>
+            </a>
+            <div class="nav-links">
+                <a href="#fonctionnement" class="nav-link">Comment ça marche</a>
+                <a href="#avantages" class="nav-link">Avantages</a>
+                <a href="#tarifs" class="nav-link">Tarifs</a>
+                <a href="auth?tab=register" class="nav-cta">
+                    Essai gratuit
+                    <i class="ph ph-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="ph ph-buildings"></i>
+                    <span>Pour les pros du bâtiment</span>
+                </div>
+
+                <h1 class="hero-title">
+                    Chiffrez vos chantiers<br>
+                    <span class="highlight">à la voix</span>
+                </h1>
+
+                <p class="hero-subtitle">
+                    Décrivez les travaux à réaliser, Chiffreo génère un devis professionnel en quelques secondes. Fini les soirées à rédiger vos chiffrages.
+                </p>
+
+                <div class="hero-cta-group">
+                    <a href="auth?tab=register" class="btn-cta-primary">
+                        <i class="ph ph-play-circle"></i>
+                        Essai gratuit 14 jours
+                    </a>
+                    <p class="cta-reassurance">
+                        <i class="ph ph-check-circle"></i>
+                        Sans carte bancaire • Sans engagement
+                    </p>
+                </div>
+
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-value">2 min</span>
+                        <span class="stat-label">pour créer un devis</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat">
+                        <span class="stat-value">100%</span>
+                        <span class="stat-label">conforme NF C 15-100</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat">
+                        <span class="stat-value">PDF</span>
+                        <span class="stat-label">professionnel inclus</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-visual">
+                <div class="demo-container">
+                    <div class="demo-phone">
+                        <div class="demo-screen">
+                            <!-- Animation visuelle du flow -->
+                            <div class="demo-flow">
+                                <div class="demo-step demo-step-1">
+                                    <div class="demo-icon-circle">
+                                        <i class="ph ph-microphone"></i>
+                                    </div>
+                                    <div class="demo-speech-bubble">
+                                        <p>"Installer un tableau 4 rangées avec disjoncteur 40A, 8 prises, 6 points lumineux..."</p>
+                                    </div>
+                                </div>
+
+                                <div class="demo-arrow">
+                                    <i class="ph ph-arrow-down"></i>
+                                </div>
+
+                                <div class="demo-step demo-step-2">
+                                    <div class="demo-icon-circle demo-ai">
+                                        <i class="ph ph-sparkle"></i>
+                                    </div>
+                                    <div class="demo-processing">
+                                        <span>Analyse en cours</span>
+                                        <div class="demo-dots">
+                                            <span></span><span></span><span></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="demo-arrow">
+                                    <i class="ph ph-arrow-down"></i>
+                                </div>
+
+                                <div class="demo-step demo-step-3">
+                                    <div class="demo-quote-preview">
+                                        <div class="demo-quote-header">
+                                            <i class="ph ph-file-text"></i>
+                                            <span>Devis n°2026-0042</span>
+                                        </div>
+                                        <div class="demo-quote-lines">
+                                            <div class="demo-line">
+                                                <span>Tableau 4 rangées</span>
+                                                <span>285,00 €</span>
+                                            </div>
+                                            <div class="demo-line">
+                                                <span>Disjoncteur 40A</span>
+                                                <span>45,00 €</span>
+                                            </div>
+                                            <div class="demo-line">
+                                                <span>8× Prises 2P+T</span>
+                                                <span>120,00 €</span>
+                                            </div>
+                                            <div class="demo-line demo-line-more">
+                                                <span>+ 4 autres lignes...</span>
+                                            </div>
+                                        </div>
+                                        <div class="demo-quote-total">
+                                            <span>Total TTC</span>
+                                            <span>1 247,50 €</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comment ça marche -->
+    <section id="fonctionnement" class="section-how">
+        <div class="section-container">
+            <div class="section-header">
+                <h2>Comment ça marche</h2>
+                <p>3 étapes pour transformer votre voix en devis professionnel</p>
+            </div>
+
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-icon">
+                        <i class="ph ph-microphone"></i>
+                    </div>
+                    <h3>Parlez</h3>
+                    <p>Décrivez les travaux à réaliser comme vous le feriez au téléphone avec un collègue. Naturellement.</p>
+                </div>
+
+                <div class="step-connector">
+                    <i class="ph ph-arrow-right"></i>
+                </div>
+
+                <div class="step-card step-card-highlight">
+                    <div class="step-number">2</div>
+                    <div class="step-icon step-icon-ai">
+                        <i class="ph ph-sparkle"></i>
+                    </div>
+                    <h3>Chiffreo analyse</h3>
+                    <p>Chiffreo comprend les termes techniques, identifie le matériel et calcule les prix selon votre grille tarifaire.</p>
+                </div>
+
+                <div class="step-connector">
+                    <i class="ph ph-arrow-right"></i>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-icon">
+                        <i class="ph ph-paper-plane-tilt"></i>
+                    </div>
+                    <h3>Envoyez</h3>
+                    <p>Récupérez votre devis en PDF, modifiez si besoin, et envoyez-le directement à votre client.</p>
+                </div>
+            </div>
+
+            <div class="section-cta">
+                <a href="auth?tab=register" class="btn-cta-secondary">
+                    Essayer gratuitement
+                    <i class="ph ph-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Avantages -->
+    <section id="avantages" class="section-benefits">
+        <div class="section-container">
+            <div class="section-header">
+                <h2>Pourquoi Chiffreo</h2>
+                <p>Conçu par des professionnels, pour des professionnels</p>
+            </div>
+
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="ph ph-clock-countdown"></i>
+                    </div>
+                    <h3>Gagnez 80% de temps</h3>
+                    <p>2 minutes au lieu de 20 pour créer un devis complet avec fournitures et main d'œuvre.</p>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="ph ph-currency-eur"></i>
+                    </div>
+                    <h3>Prix à jour 2026</h3>
+                    <p>Grille tarifaire actualisée selon les prix du marché. TVA 5.5%, 10% ou 20% automatique.</p>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="ph ph-certificate"></i>
+                    </div>
+                    <h3>Conforme NF C 15-100</h3>
+                    <p>L'appli connaît les normes électriques et inclut automatiquement le matériel obligatoire.</p>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="ph ph-device-mobile"></i>
+                    </div>
+                    <h3>Fonctionne sur chantier</h3>
+                    <p>Application web légère. Dictez votre devis depuis votre téléphone, même avec peu de réseau.</p>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="ph ph-pencil-simple"></i>
+                    </div>
+                    <h3>Modifiable à volonté</h3>
+                    <p>Ajoutez, supprimez ou modifiez chaque ligne. Ajustez les quantités et prix unitaires.</p>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="ph ph-shield-check"></i>
+                    </div>
+                    <h3>Données sécurisées</h3>
+                    <p>Vos données clients restent sur votre appareil. Hébergement français, RGPD compliant.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tarification -->
+    <section id="tarifs" class="section-pricing">
+        <div class="section-container">
+            <div class="section-header">
+                <h2>Tarifs simples, sans surprise</h2>
+                <p>Choisissez le plan adapté à votre activité</p>
+            </div>
+
+            <!-- Toggle Mensuel/Annuel -->
+            <div class="pricing-toggle-container">
+                <span class="toggle-label active" data-period="monthly">Mensuel</span>
+                <button
+                    class="pricing-toggle"
+                    role="switch"
+                    aria-checked="false"
+                    aria-label="Basculer entre facturation mensuelle et annuelle"
+                    id="billingToggle"
+                >
+                    <span class="toggle-slider"></span>
+                </button>
+                <span class="toggle-label" data-period="yearly">
+                    Annuel
+                    <span class="toggle-badge">-17%</span>
+                </span>
+            </div>
+
+            <div class="pricing-grid">
+                <!-- Plan Découverte -->
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-name">Découverte</h3>
+                        <div class="pricing-price">
+                            <span class="price-value">0 €</span>
+                            <span class="price-period">pour toujours</span>
+                        </div>
+                        <p class="pricing-description">Pour tester et se convaincre</p>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>10 devis par mois</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Dictée vocale</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Export PDF (Généré par Chiffreo)</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Calcul TVA automatique</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Historique 30 jours</span>
+                        </li>
+                        <li class="feature-disabled">
+                            <i class="ph ph-x"></i>
+                            <span>Pas de personnalisation PDF</span>
+                        </li>
+                    </ul>
+                    <div class="pricing-cta">
+                        <a href="auth?tab=register" class="btn-pricing-secondary">
+                            Créer mon compte
+                        </a>
+                        <p class="pricing-note">Sans carte bancaire</p>
+                    </div>
+                </div>
+
+                <!-- Plan Pro (mis en avant) -->
+                <div class="pricing-card pricing-card-featured" data-plan="pro">
+                    <div class="pricing-badge">
+                        <i class="ph ph-star"></i>
+                        <span>Le plus populaire</span>
+                    </div>
+                    <div class="pricing-header">
+                        <h3 class="pricing-name">Pro</h3>
+                        <div class="pricing-price">
+                            <span class="price-value" data-monthly="29" data-yearly="24">29 €</span>
+                            <span class="price-period">/mois</span>
+                        </div>
+                        <p class="pricing-annual monthly-text">ou 24 €/mois en annuel</p>
+                        <p class="pricing-annual yearly-text" style="display: none;">Facturé 288 €/an</p>
+                        <p class="pricing-description">Pour les artisans qui veulent gagner du temps</p>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Devis illimités</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Dictée vocale + photo chantier</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>PDF à vos couleurs (logo, coordonnées)</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Gestion clients intégrée</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Grille tarifaire personnalisable</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Calcul TVA automatique (5.5%, 10%, 20%)</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Historique illimité</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Support email</span>
+                        </li>
+                    </ul>
+                    <div class="pricing-cta">
+                        <a href="auth?tab=register" class="btn-pricing-primary">
+                            Essai gratuit 14 jours
+                        </a>
+                        <p class="pricing-note">Sans carte bancaire • Sans engagement</p>
+                    </div>
+                </div>
+
+                <!-- Plan Équipe -->
+                <div class="pricing-card" data-plan="team">
+                    <div class="pricing-header">
+                        <h3 class="pricing-name">Équipe</h3>
+                        <div class="pricing-price">
+                            <span class="price-value" data-monthly="49" data-yearly="42">49 €</span>
+                            <span class="price-period">/mois</span>
+                        </div>
+                        <p class="pricing-annual monthly-text">ou 42 €/mois en annuel</p>
+                        <p class="pricing-annual yearly-text" style="display: none;">Facturé 504 €/an</p>
+                        <p class="pricing-description">Pour les entreprises avec plusieurs techniciens</p>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Tout le plan Pro inclus</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Jusqu'à 5 utilisateurs</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Tableau de bord multi-utilisateurs</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Modèles de devis partagés</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Suivi statuts (envoyé, accepté, refusé)</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Export comptable</span>
+                        </li>
+                        <li>
+                            <i class="ph ph-check"></i>
+                            <span>Support prioritaire</span>
+                        </li>
+                    </ul>
+                    <p class="pricing-extra">+8 €/mois par utilisateur supplémentaire</p>
+                    <div class="pricing-cta">
+                        <a href="auth?tab=register" class="btn-pricing-secondary">
+                            Essai gratuit 14 jours
+                        </a>
+                        <p class="pricing-note">Sans carte bancaire</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Final -->
+    <section class="section-final-cta">
+        <div class="section-container">
+            <div class="final-cta-content">
+                <h2>Prêt à gagner du temps ?</h2>
+                <p>Rejoignez les professionnels qui chiffrent leurs chantiers en 2 minutes</p>
+                <a href="auth?tab=register" class="btn-cta-primary btn-large">
+                    <i class="ph ph-play-circle"></i>
+                    Essai gratuit 14 jours
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <img src="icons/logo_chiffreo.png" alt="Chiffreo" class="footer-logo">
+                <span>Chiffreo</span>
+            </div>
+            <div class="footer-links">
+                <a href="mentions-legales.html">Mentions légales</a>
+                <a href="confidentialite.html">Confidentialité</a>
+            </div>
+            <p class="footer-copy">© 2026 Chiffreo — Propulsé par MSConseil</p>
+        </div>
+    </footer>
+
+    <script>
+    // Toggle Mensuel/Annuel
+    (function() {
+        const toggle = document.getElementById('billingToggle');
+        if (!toggle) return;
+
+        const monthlyLabels = document.querySelectorAll('.monthly-text');
+        const yearlyLabels = document.querySelectorAll('.yearly-text');
+        const priceValues = document.querySelectorAll('.price-value[data-monthly]');
+        const toggleLabels = document.querySelectorAll('.toggle-label');
+
+        function updatePricing(isYearly) {
+            // Update toggle state
+            toggle.setAttribute('aria-checked', isYearly);
+            toggle.classList.toggle('active', isYearly);
+
+            // Update labels active state
+            toggleLabels.forEach(label => {
+                const period = label.dataset.period;
+                label.classList.toggle('active',
+                    (period === 'yearly' && isYearly) || (period === 'monthly' && !isYearly)
+                );
+            });
+
+            // Update prices
+            priceValues.forEach(el => {
+                const price = isYearly ? el.dataset.yearly : el.dataset.monthly;
+                el.textContent = price + ' €';
+            });
+
+            // Toggle visibility of annual/monthly text
+            monthlyLabels.forEach(el => {
+                el.style.display = isYearly ? 'none' : 'block';
+            });
+            yearlyLabels.forEach(el => {
+                el.style.display = isYearly ? 'block' : 'none';
+            });
+        }
+
+        // Click handler
+        toggle.addEventListener('click', function() {
+            const isCurrentlyYearly = toggle.getAttribute('aria-checked') === 'true';
+            updatePricing(!isCurrentlyYearly);
+        });
+
+        // Keyboard handler
+        toggle.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggle.click();
+            }
+        });
+
+        // Click on labels to toggle
+        toggleLabels.forEach(label => {
+            label.addEventListener('click', function() {
+                const period = this.dataset.period;
+                updatePricing(period === 'yearly');
+            });
+        });
+
+        // Initialize
+        updatePricing(false);
+    })();
+    </script>
+</body>
+</html>

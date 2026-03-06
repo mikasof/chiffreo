@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="description" content="Mentions légales - Chiffreo">
+    <meta name="robots" content="noindex, nofollow">
+
+    <title>Mentions légales - Chiffreo</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
+
+    <link rel="stylesheet" href="css/app.css">
+    <style>
+        .legal-page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        .legal-header {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .legal-header h1 {
+            font-size: 2rem;
+            color: var(--color-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .legal-header .last-update {
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .legal-section {
+            margin-bottom: 2.5rem;
+        }
+
+        .legal-section h2 {
+            font-size: 1.4rem;
+            color: var(--color-text);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid rgba(30, 58, 95, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .legal-section h2 i {
+            color: var(--color-primary);
+        }
+
+        .legal-section p,
+        .legal-section li {
+            color: var(--color-text-secondary);
+            line-height: 1.7;
+            margin-bottom: 0.75rem;
+        }
+
+        .legal-section ul {
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .legal-section li {
+            margin-bottom: 0.5rem;
+        }
+
+        .info-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .info-card h3 {
+            color: var(--color-text);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .info-card h3 i {
+            color: var(--color-primary);
+        }
+
+        .info-card p {
+            margin: 0.25rem 0;
+        }
+
+        .info-card a {
+            color: var(--color-primary);
+            text-decoration: none;
+        }
+
+        .info-card a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--color-primary);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 2rem;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .placeholder {
+            background: rgba(249, 158, 11, 0.1);
+            color: #b45309;
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .legal-page {
+                padding: 1rem 1rem 3rem;
+            }
+
+            .legal-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .legal-section h2 {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <a href="index.html" class="logo">
+                    <img src="icons/logo.png" alt="Chiffreo" class="logo-img">
+                    <span>Chiffreo</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div class="legal-page">
+                <a href="index.html" class="back-link">
+                    <i class="ph ph-arrow-left"></i>
+                    Retour à l'accueil
+                </a>
+
+                <div class="legal-header">
+                    <h1>Mentions légales</h1>
+                    <p class="last-update">Dernière mise à jour : 5 mars 2026</p>
+                </div>
+
+                <p>
+                    Conformément aux dispositions de la loi n° 2004-575 du 21 juin 2004 pour la confiance
+                    en l'économie numérique (LCEN), il est porté à la connaissance des utilisateurs et visiteurs
+                    du site <strong>https://chiffreo.fr</strong> les présentes mentions légales.
+                </p>
+
+                <!-- Éditeur -->
+                <section class="legal-section">
+                    <h2><i class="ph ph-buildings"></i> Éditeur du site</h2>
+
+                    <div class="info-card">
+                        <h3><i class="ph ph-identification-card"></i> Identité</h3>
+                        <p><strong>Raison sociale :</strong> MSConseil</p>
+                        <p><strong>Forme juridique :</strong> <span class="placeholder">[À compléter : SAS, SARL, etc.]</span></p>
+                        <p><strong>Capital social :</strong> <span class="placeholder">[À compléter]</span> euros</p>
+                        <p><strong>Siège social :</strong> <span class="placeholder">[Adresse à compléter]</span></p>
+                        <p><strong>SIRET :</strong> <span class="placeholder">[Numéro à compléter]</span></p>
+                        <p><strong>RCS :</strong> <span class="placeholder">[Ville et numéro à compléter]</span></p>
+                        <p><strong>N° TVA intracommunautaire :</strong> <span class="placeholder">[Numéro à compléter]</span></p>
+                    </div>
+
+                    <div class="info-card">
+                        <h3><i class="ph ph-phone"></i> Contact</h3>
+                        <p><strong>Téléphone :</strong> <span class="placeholder">[Numéro à compléter]</span></p>
+                        <p><strong>Email :</strong> <a href="mailto:contact@chiffreo.fr">contact@chiffreo.fr</a></p>
+                        <p><strong>Site web :</strong> <a href="https://chiffreo.fr">https://chiffreo.fr</a></p>
+                    </div>
+                </section>
+
+                <!-- Directeur de publication -->
+                <section class="legal-section">
+                    <h2><i class="ph ph-user"></i> Directeur de la publication</h2>
+
+                    <div class="info-card">
+                        <p><strong>Nom :</strong> <span class="placeholder">[Nom du directeur de publication à compléter]</span></p>
+                        <p><strong>Qualité :</strong> <span class="placeholder">[Fonction : Gérant, Président, etc.]</span></p>
+                        <p><strong>Email :</strong> <a href="mailto:contact@chiffreo.fr">contact@chiffreo.fr</a></p>
+                    </div>
+                </section>
+
+                <!-- Hébergeur -->
+                <section class="legal-section">
+                    <h2><i class="ph ph-cloud"></i> Hébergement</h2>
+
+                    <div class="info-card">
+                        <h3><i class="ph ph-server"></i> Hébergeur du site</h3>
+                        <p><strong>Raison sociale :</strong> <span class="placeholder">[Nom de l'hébergeur à compléter]</span></p>
+                        <p><strong>Adresse :</strong> <span class="placeholder">[Adresse de l'hébergeur à compléter]</span></p>
+                        <p><strong>Téléphone :</strong> <span class="placeholder">[Téléphone hébergeur]</span></p>
+                        <p><strong>Site web :</strong> <span class="placeholder">[URL de l'hébergeur]</span></p>
+                    </div>
+
+                    <p>Les données sont hébergées en France / Union Européenne, conformément au Règlement Général sur la Protection des Données (RGPD).</p>
+                </section>
+
+                <!-- Propriété intellectuelle -->
+                <section class="legal-section">
+                    <h2><i class="ph ph-copyright"></i> Propriété intellectuelle</h2>
+
+                    <p>
+                        L'ensemble du contenu du site Chiffreo (textes, images, graphismes, logo, icônes, sons, logiciels, etc.)
+                        est la propriété exclusive de MSConseil ou de ses partenaires et est protégé par les lois françaises et
+                        internationales relatives à la propriété intellectuelle.
+                    </p>
+
+                    <p>
+                        Toute reproduction, représentation, modification, publication, adaptation de tout ou partie des éléments
+                        du site, quel que soit le moyen ou le procédé utilisé, est interdite sans l'autorisation écrite préalable de MSConseil.
+                    </p>
+
+                    <p>
+                        Toute exploitation non autorisée du site ou de l'un quelconque des éléments qu'il contient sera considérée
+                        comme constitutive d'une contrefaçon et poursuivie conformément aux dispositions des articles L.335-2 et
+                        suivants du Code de la Propriété Intellectuelle.
+                    </p>
+                </section>
+
+                <!-- Responsabilité -->
+                <section class="legal-section">
+                    <h2><i class="ph ph-shield-warning"></i> Limitation de responsabilité</h2>
+
+                    <p>
+                        MSConseil s'efforce d'assurer au mieux de ses possibilités l'exactitude et la mise à jour des informations
+                        diffusées sur le site, dont elle se réserve le droit de corriger, à tout moment et sans préavis, le contenu.
+                    </p>
+
+                    <p>
+                        Toutefois, MSConseil ne peut garantir l'exactitude, la précision ou l'exhaustivité des informations mises
+                        à disposition sur le site. En conséquence, MSConseil décline toute responsabilité :
+                    </p>
+
+                    <ul>
+                        <li>Pour toute imprécision, inexactitude ou omission portant sur des informations disponibles sur le site</li>
+                        <li>Pour tous dommages résultant d'une intrusion frauduleuse d'un tiers ayant entraîné une modification des informations diffusées sur le site</li>
+                        <li>Pour tout dommage, direct ou indirect, quelles qu'en soient les causes, origines, natures ou conséquences, provoqué en raison de l'accès au site ou de l'impossibilité d'y accéder</li>
+                        <li>Pour l'utilisation du site et/ou du crédit accordé à une quelconque information provenant directement ou indirectement du site</li>
+                    </ul>
+
+                    <p>
+                        Les devis générés par l'intelligence artificielle sont fournis à titre indicatif et doivent être vérifiés
+                        par l'utilisateur avant utilisation. MSConseil ne saurait être tenue responsable des erreurs éventuelles
+                        dans les estimations générées.
+                    </p>
+                </section>
+
+                <!-- Liens hypertextes -->
+                <section class="legal-section">
+                    <h2><i class="ph ph-link"></i> Liens hypertextes</h2>
+
+                    <p>
+                        Le site Chiffreo peut contenir des liens hypertextes vers d'autres sites internet. MSConseil n'exerce
+                        aucun contrôle sur ces sites et décline toute responsabilité quant à leur contenu.
+                    </p>
+
+                    <p>
+                        La création de liens hypertextes vers le site Chiffreo est soumise à l'accord préalable de MSConseil.
+                    </p>
+                </section>
+
+                <!-- Données personnelles -->
+                <section class="legal-section">
+                    <h2><i class="ph ph-lock"></i> Protection des données personnelles</h2>
+
+                    <p>
+                        Conformément au Règlement Général sur la Protection des Données (RGPD) et à la loi Informatique et Libertés,
+                        vous disposez de droits concernant vos données personnelles.
+                    </p>
+
+                    <p>
+                        Pour en savoir plus sur la collecte et le traitement de vos données personnelles, ainsi que sur vos droits,
+                        veuillez consulter notre <a href="confidentialite.html">Politique de confidentialité</a>.
+                    </p>
+
+                    <div class="info-card">
+                        <h3><i class="ph ph-envelope"></i> Contact pour vos données</h3>
+                        <p>Pour exercer vos droits ou pour toute question relative à vos données personnelles :</p>
+                        <p><strong>Email :</strong> <a href="mailto:rgpd@chiffreo.fr">rgpd@chiffreo.fr</a></p>
+                    </div>
+                </section>
+
+                <!-- Cookies -->
+                <section class="legal-section">
+                    <h2><i class="ph ph-cookie"></i> Cookies</h2>
+
+                    <p>
+                        Le site Chiffreo utilise des cookies strictement nécessaires au fonctionnement du service.
+                        Pour plus d'informations, consultez la section dédiée de notre
+                        <a href="confidentialite.html#cookies">Politique de confidentialité</a>.
+                    </p>
+                </section>
+
+                <!-- Droit applicable -->
+                <section class="legal-section">
+                    <h2><i class="ph ph-scales"></i> Droit applicable et juridiction</h2>
+
+                    <p>
+                        Les présentes mentions légales sont régies par le droit français. En cas de litige et à défaut
+                        de résolution amiable, les tribunaux français seront seuls compétents.
+                    </p>
+                </section>
+
+                <!-- Crédits -->
+                <section class="legal-section">
+                    <h2><i class="ph ph-medal"></i> Crédits</h2>
+
+                    <ul>
+                        <li><strong>Conception et développement :</strong> MSConseil</li>
+                        <li><strong>Police de caractères :</strong> Plus Jakarta Sans (Google Fonts)</li>
+                        <li><strong>Icônes :</strong> Phosphor Icons</li>
+                        <li><strong>Technologies :</strong> PHP, JavaScript, MySQL</li>
+                    </ul>
+                </section>
+
+                <a href="index.html" class="back-link" style="margin-top: 2rem;">
+                    <i class="ph ph-arrow-left"></i>
+                    Retour à l'accueil
+                </a>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Chiffreo &copy; 2026 &mdash; Propulsé par MSConseil</p>
+            <div class="footer-links">
+                <a href="confidentialite.html">Politique de confidentialité</a>
+                <a href="mentions-legales.html">Mentions légales</a>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

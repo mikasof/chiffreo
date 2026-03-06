@@ -1,0 +1,800 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Services\OpenAIClient;
+use App\Services\QuoteCalculator;
+use App\Services\QuotePdfRenderer;
+use App\Services\NormsService;
+use App\Services\QuotaService;
+use App\Models\QuoteRepository;
+use App\Models\UserRepository;
+use App\Models\CompanyRepository;
+use App\Middleware\RateLimiter;
+use App\Middleware\AuthMiddleware;
+
+/**
+ * Controller principal de l'API
+ */
+class ApiController
+{
+    private OpenAIClient $openAI;
+    private QuoteCalculator $calculator;
+    private QuotePdfRenderer $pdfRenderer;
+    private NormsService $normsService;
+    private QuoteRepository $quoteRepo;
+    private RateLimiter $rateLimiter;
+    private AuthMiddleware $auth;
+    private QuotaService $quotaService;
+    private UserRepository $userRepo;
+    private CompanyRepository $companyRepo;
+
+    public function __construct()
+    {
+        $this->openAI = new OpenAIClient();
+        $this->calculator = new QuoteCalculator();
+        $this->pdfRenderer = new QuotePdfRenderer();
+        $this->normsService = new NormsService();
+        $this->quoteRepo = new QuoteRepository();
+        $this->rateLimiter = new RateLimiter();
+        $this->auth = new AuthMiddleware();
+        $this->quotaService = new QuotaService();
+        $this->userRepo = new UserRepository();
+        $this->companyRepo = new CompanyRepository();
+    }
+
+    /**
+     * POST /api/transcribe
+     * Transcrit un fichier audio en texte
+     */
+    public function transcribe(): void
+    {
+        try {
+            // Rate limiting
+            if (!$this->checkRateLimit('transcribe')) {
+                return;
+            }
+
+            // Vérifier la méthode
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                $this->jsonError('Méthode non autorisée', 405);
+                return;
+            }
+
+            // Vérifier le fichier
+            if (!isset($_FILES['audio']) || $_FILES['audio']['error'] !== UPLOAD_ERR_OK) {
+                $this->jsonError('Fichier audio requis', 400);
+                return;
+            }
+
+            $file = $_FILES['audio'];
+
+            // Valider le type de fichier
+            $allowedMimes = [
+                'audio/webm', 'audio/mp3', 'audio/mpeg', 'audio/mp4',
+                'audio/m4a', 'audio/wav', 'audio/x-wav', 'audio/ogg',
+                'audio/x-m4a', 'audio/aac', 'audio/x-aac',
+                'video/webm', // Chrome enregistre parfois en video/webm
+                'application/octet-stream', // Fallback générique
+                'audio/opus', 'audio/x-opus+ogg'
+            ];
+
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->file($file['tmp_name']);
+
+            // Log pour debug
+            $this->log('INFO', 'transcribe_upload', 'Fichier reçu', [
+                'mime_detected' => $mimeType,
+                'original_name' => $file['name'],
+                'size' => $file['size']
+            ]);
+
+            if (!in_array($mimeType, $allowedMimes)) {
+                $this->jsonError('Format audio non supporté (' . $mimeType . '). Formats acceptés: webm, mp3, m4a, wav, ogg', 400);
+                return;
+            }
+
+            // Vérifier la taille (max 10 MB par défaut)
+            $maxSize = (int) ($_ENV['MAX_UPLOAD_SIZE_MB'] ?? 10) * 1024 * 1024;
+            if ($file['size'] > $maxSize) {
+                $this->jsonError('Fichier trop volumineux (max ' . ($_ENV['MAX_UPLOAD_SIZE_MB'] ?? 10) . ' MB)', 400);
+                return;
+            }
+
+            // Déplacer le fichier temporairement
+            $tempPath = __DIR__ . '/../../storage/audio/' . uniqid('audio_') . '_' . basename($file['name']);
+            $tempDir = dirname($tempPath);
+
+            if (!is_dir($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+
+            if (!move_uploaded_file($file['tmp_name'], $tempPath)) {
+                $this->jsonError('Erreur lors du stockage du fichier', 500);
+                return;
+            }
+
+            // Transcrire via OpenAI
+            try {
+                $result = $this->openAI->transcribe($tempPath, $mimeType);
+
+                // Supprimer le fichier temporaire
+                @unlink($tempPath);
+
+                $this->jsonSuccess([
+                    'text' => $result['text'],
+                    'language' => $result['language'],
+                    'duration' => $result['duration']
+                ]);
+
+            } catch (\Exception $e) {
+                @unlink($tempPath);
+                $this->logError('transcribe', $e->getMessage());
+                $this->jsonError('Erreur de transcription: ' . $e->getMessage(), 500);
+            }
+
+        } catch (\Exception $e) {
+            $this->logError('transcribe', $e->getMessage());
+            $this->jsonError('Erreur serveur', 500);
+        }
+    }
+
+    /**
+     * POST /api/generate
+     * Génère un devis à partir d'une description
+     */
+    public function generate(): void
+    {
+        try {
+            // Rate limiting
+            if (!$this->checkRateLimit('generate')) {
+                return;
+            }
+
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                $this->jsonError('Méthode non autorisée', 405);
+                return;
+            }
+
+            // Authentification optionnelle (mais requise pour sauvegarder)
+            $user = $this->auth->optionalAuth();
+            $userId = $this->auth->getUserId();
+            $companyId = $this->auth->getCompanyId();
+
+            // Si connecté, vérifier le quota (basé sur la company)
+            if ($user) {
+                if (!$this->quotaService->canCreateQuote($user)) {
+                    $this->jsonError('Quota mensuel atteint. Passez au plan Pro pour des devis illimités.', 403);
+                    return;
+                }
+            }
+
+            // Récupérer les données
+            $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+            if (strpos($contentType, 'application/json') !== false) {
+                $input = json_decode(file_get_contents('php://input'), true);
+            } else {
+                // multipart/form-data pour fichiers
+                $input = $_POST;
+            }
+
+            $description = trim($input['description'] ?? '');
+            $transcription = trim($input['transcription'] ?? '');
+
+            if (empty($description) && empty($transcription)) {
+                $this->jsonError('Description ou transcription requise', 400);
+                return;
+            }
+
+            // Récupérer les données client (JAMAIS envoyées à l'IA)
+            $clientData = [];
+            if (!empty($input['client'])) {
+                $clientData = is_string($input['client'])
+                    ? json_decode($input['client'], true)
+                    : $input['client'];
+            }
+
+            // Récupérer les données chantier
+            $chantierData = [];
+            if (!empty($input['chantier'])) {
+                $chantierData = is_string($input['chantier'])
+                    ? json_decode($input['chantier'], true)
+                    : $input['chantier'];
+            }
+
+            // Texte combiné (sans données personnelles client)
+            $texteComplet = $description;
+            if (!empty($transcription)) {
+                $texteComplet = $description . "\n\n[Transcription audio] " . $transcription;
+            }
+
+            // Gérer les images uploadées (optionnel)
+            $imageUrls = [];
+            if (!empty($_FILES['images'])) {
+                $imageUrls = $this->processUploadedImages($_FILES['images']);
+            }
+
+            // Appeler OpenAI pour générer le devis
+            $aiResponse = $this->openAI->generateQuoteJson(
+                $texteComplet,
+                !empty($transcription) ? $transcription : null,
+                $imageUrls
+            );
+
+            // Calculer les montants avec la grille de prix
+            // Le service TVA analyse automatiquement la description pour déterminer le taux
+            $quoteWithTotals = $this->calculator->calculate(
+                $aiResponse,
+                null, // tier (gamme de prix)
+                $texteComplet // description pour calcul TVA automatique
+            );
+
+            // Construire le nom complet du client
+            $clientName = null;
+            if (!empty($clientData)) {
+                $clientName = trim(($clientData['prenom'] ?? '') . ' ' . ($clientData['nom'] ?? ''));
+                if (empty($clientName)) {
+                    $clientName = $clientData['nom'] ?? null;
+                }
+            }
+
+            // Sauvegarder en base de données
+            $reference = $this->quoteRepo->generateReference();
+            $quoteId = $this->quoteRepo->create([
+                'reference' => $reference,
+                'company_id' => $companyId,
+                'user_id' => $userId,
+                // Infos client (stockées directement sur le devis)
+                'client_name' => $clientName,
+                'client_company' => $clientData['societe'] ?? null,
+                'client_email' => $clientData['email'] ?? null,
+                'client_phone' => $clientData['telephone'] ?? null,
+                'client_address' => $clientData['adresse'] ?? null,
+                // Infos chantier
+                'titre' => $quoteWithTotals['chantier']['titre'] ?? 'Devis travaux électriques',
+                'localisation' => $quoteWithTotals['chantier']['localisation'] ?? null,
+                'perimetre' => $quoteWithTotals['chantier']['perimetre'] ?? null,
+                'chantier_adresse' => $chantierData['adresse'] ?? null,
+                'chantier_code_postal' => $chantierData['codePostal'] ?? null,
+                'chantier_ville' => $chantierData['ville'] ?? null,
+                // Contenu
+                'description_originale' => $texteComplet,
+                'transcription_audio' => $transcription ?: null,
+                'ai_response' => $aiResponse,
+                'quote_data' => $quoteWithTotals,
+                // Totaux
+                'total_ht' => $quoteWithTotals['totaux']['total_ht'] ?? 0,
+                'total_tva' => $quoteWithTotals['totaux']['montant_tva'] ?? 0,
+                'total_ttc' => $quoteWithTotals['totaux']['total_ttc'] ?? 0,
+                'taux_tva' => $quoteWithTotals['totaux']['taux_tva'] ?? 20.00
+            ]);
+
+            // Incrémenter le compteur de devis de la company
+            if ($companyId) {
+                $this->companyRepo->incrementQuoteCount($companyId);
+                // Marquer le premier devis si c'est le cas
+                if ($userId) {
+                    $this->userRepo->markFirstQuoteDone($userId);
+                }
+            }
+
+            $this->logInfo('generate', 'Devis créé', [
+                'id' => $quoteId,
+                'ref' => $reference,
+                'client_name' => $clientName,
+                'user_id' => $userId,
+                'company_id' => $companyId
+            ]);
+
+            $response = [
+                'id' => $quoteId,
+                'reference' => $reference,
+                'quote' => $quoteWithTotals,
+                'pdf_url' => '/pdf/quote/' . $quoteId
+            ];
+
+            // Inclure info client si présent (pour confirmation UI)
+            if ($clientName) {
+                $response['client_name'] = $clientName;
+            }
+
+            $this->jsonSuccess($response, 201);
+
+        } catch (\Exception $e) {
+            $this->logError('generate', $e->getMessage());
+            $this->jsonError('Erreur lors de la génération: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * GET /api/quote/{id}
+     * Récupère un devis par ID ou référence
+     */
+    public function getQuote(string $identifier): void
+    {
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+                $this->jsonError('Méthode non autorisée', 405);
+                return;
+            }
+
+            // ID numérique ou référence ?
+            if (is_numeric($identifier)) {
+                $quote = $this->quoteRepo->findById((int) $identifier);
+            } else {
+                $quote = $this->quoteRepo->findByReference($identifier);
+            }
+
+            if (!$quote) {
+                $this->jsonError('Devis non trouvé', 404);
+                return;
+            }
+
+            // Récupérer les attachements
+            $attachments = $this->quoteRepo->getAttachments((int) $quote['id']);
+
+            $this->jsonSuccess([
+                'id' => (int) $quote['id'],
+                'reference' => $quote['reference'],
+                'status' => $quote['status'],
+                'created_at' => $quote['created_at'],
+                'expires_at' => $quote['expires_at'],
+                'quote' => $quote['quote_data'],
+                'attachments' => $attachments,
+                'pdf_url' => '/pdf/quote/' . $quote['id']
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logError('getQuote', $e->getMessage());
+            $this->jsonError('Erreur serveur', 500);
+        }
+    }
+
+    /**
+     * GET /api/quotes
+     * Liste les devis (filtrés par company si authentifié)
+     */
+    public function listQuotes(): void
+    {
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+                $this->jsonError('Méthode non autorisée', 405);
+                return;
+            }
+
+            // Authentification optionnelle - si connecté, filtrer par company
+            $this->auth->optionalAuth();
+            $companyId = $this->auth->getCompanyId();
+
+            $limit = min((int) ($_GET['limit'] ?? 20), 100);
+            $offset = (int) ($_GET['offset'] ?? 0);
+
+            $quotes = $this->quoteRepo->findAll($limit, $offset, $companyId);
+
+            $this->jsonSuccess([
+                'quotes' => $quotes,
+                'limit' => $limit,
+                'offset' => $offset
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logError('listQuotes', $e->getMessage());
+            $this->jsonError('Erreur serveur', 500);
+        }
+    }
+
+    /**
+     * GET /pdf/quote/{id}
+     * Génère et renvoie le PDF du devis
+     */
+    public function getPdf(string $identifier): void
+    {
+        try {
+            // ID numérique ou référence ?
+            if (is_numeric($identifier)) {
+                $quote = $this->quoteRepo->findById((int) $identifier);
+            } else {
+                $quote = $this->quoteRepo->findByReference($identifier);
+            }
+
+            if (!$quote) {
+                http_response_code(404);
+                echo "Devis non trouvé";
+                return;
+            }
+
+            // Générer le PDF
+            $pdf = $this->pdfRenderer->render(
+                $quote['quote_data'],
+                $quote['reference']
+            );
+
+            // Headers pour téléchargement PDF
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: inline; filename="' . $quote['reference'] . '.pdf"');
+            header('Content-Length: ' . strlen($pdf));
+            header('Cache-Control: private, max-age=0, must-revalidate');
+
+            echo $pdf;
+
+        } catch (\Exception $e) {
+            $this->logError('getPdf', $e->getMessage());
+            http_response_code(500);
+            echo "Erreur lors de la génération du PDF";
+        }
+    }
+
+    /**
+     * POST /api/parse-line
+     * Transcrit et analyse une ligne dictée pour extraire les données structurées
+     */
+    public function parseLine(): void
+    {
+        try {
+            // Rate limiting
+            if (!$this->checkRateLimit('parse-line')) {
+                return;
+            }
+
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                $this->jsonError('Méthode non autorisée', 405);
+                return;
+            }
+
+            // Vérifier le fichier audio
+            if (!isset($_FILES['audio']) || $_FILES['audio']['error'] !== UPLOAD_ERR_OK) {
+                $this->jsonError('Fichier audio requis', 400);
+                return;
+            }
+
+            $file = $_FILES['audio'];
+
+            // Valider le type de fichier
+            $allowedMimes = [
+                'audio/webm', 'audio/mp3', 'audio/mpeg', 'audio/mp4',
+                'audio/m4a', 'audio/wav', 'audio/x-wav', 'audio/ogg',
+                'audio/x-m4a', 'audio/aac', 'audio/x-aac',
+                'video/webm', 'application/octet-stream',
+                'audio/opus', 'audio/x-opus+ogg'
+            ];
+
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->file($file['tmp_name']);
+
+            if (!in_array($mimeType, $allowedMimes)) {
+                $this->jsonError('Format audio non supporté', 400);
+                return;
+            }
+
+            // Déplacer le fichier temporairement
+            $tempPath = __DIR__ . '/../../storage/audio/' . uniqid('line_') . '.webm';
+            $tempDir = dirname($tempPath);
+
+            if (!is_dir($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+
+            if (!move_uploaded_file($file['tmp_name'], $tempPath)) {
+                $this->jsonError('Erreur lors du stockage du fichier', 500);
+                return;
+            }
+
+            try {
+                // 1. Transcrire l'audio
+                $transcription = $this->openAI->transcribe($tempPath, $mimeType);
+                $text = $transcription['text'] ?? '';
+
+                @unlink($tempPath);
+
+                if (empty($text)) {
+                    $this->jsonError('Aucune transcription obtenue', 400);
+                    return;
+                }
+
+                // 2. Analyser le texte pour extraire les données structurées
+                $parsedData = $this->openAI->parseLineFromText($text);
+
+                $this->logInfo('parse-line', 'Ligne analysée', [
+                    'transcription' => $text,
+                    'parsed' => $parsedData
+                ]);
+
+                $this->jsonSuccess($parsedData);
+
+            } catch (\Exception $e) {
+                @unlink($tempPath);
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            $this->logError('parse-line', $e->getMessage());
+            $this->jsonError('Erreur d\'analyse: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * POST /api/check-tva
+     * Vérifie le taux de TVA applicable pour une description
+     */
+    public function checkTva(): void
+    {
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                $this->jsonError('Méthode non autorisée', 405);
+                return;
+            }
+
+            $input = json_decode(file_get_contents('php://input'), true);
+            $description = trim($input['description'] ?? '');
+
+            if (empty($description)) {
+                $this->jsonError('Description requise', 400);
+                return;
+            }
+
+            // Contexte optionnel
+            $context = [];
+            if (isset($input['type_batiment'])) {
+                $context['type_batiment'] = $input['type_batiment'];
+            }
+            if (isset($input['anciennete'])) {
+                $context['anciennete'] = $input['anciennete'];
+            }
+            if (isset($input['neuf'])) {
+                $context['neuf'] = (bool) $input['neuf'];
+            }
+
+            $tvaInfo = $this->calculator->determinerTva($description, [], $context);
+
+            $this->jsonSuccess([
+                'taux' => $tvaInfo['taux'],
+                'raison' => $tvaInfo['raison'],
+                'message_devis' => $tvaInfo['message_devis'],
+                'attestation' => $tvaInfo['attestation'],
+                'questions' => $tvaInfo['questions']
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logError('check-tva', $e->getMessage());
+            $this->jsonError('Erreur: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * POST /api/check-norms
+     * Analyse une description et retourne les normes et équipements applicables
+     */
+    public function checkNorms(): void
+    {
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                $this->jsonError('Méthode non autorisée', 405);
+                return;
+            }
+
+            $input = json_decode(file_get_contents('php://input'), true);
+            $description = trim($input['description'] ?? '');
+
+            if (empty($description)) {
+                $this->jsonError('Description requise', 400);
+                return;
+            }
+
+            $analysis = $this->normsService->analyzeWorkDescription($description);
+
+            $this->jsonSuccess([
+                'types_travaux' => $analysis['detected_types'],
+                'normes' => $analysis['normes'],
+                'equipements_obligatoires' => $analysis['equipements_obligatoires'],
+                'equipements_recommandes' => $analysis['equipements_recommandes'],
+                'certifications' => $analysis['certifications'],
+                'points_controle' => $analysis['points_controle'],
+                'tva_applicable' => $analysis['tva_applicable'],
+                'aides_disponibles' => $analysis['aides_disponibles']
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logError('check-norms', $e->getMessage());
+            $this->jsonError('Erreur: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * GET /api/norms-types
+     * Liste tous les types de travaux avec leurs règles de normes
+     */
+    public function listNormsTypes(): void
+    {
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+                $this->jsonError('Méthode non autorisée', 405);
+                return;
+            }
+
+            $types = $this->normsService->listAvailableTypes();
+
+            $this->jsonSuccess(['types' => $types]);
+
+        } catch (\Exception $e) {
+            $this->logError('list-norms-types', $e->getMessage());
+            $this->jsonError('Erreur: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * GET /api/prices
+     * Retourne la grille de prix
+     */
+    public function getPrices(): void
+    {
+        try {
+            $prices = $this->calculator->getPriceGrid();
+
+            // Grouper par catégorie
+            $grouped = [];
+            foreach ($prices as $code => $item) {
+                $cat = $item['category'];
+                if (!isset($grouped[$cat])) {
+                    $grouped[$cat] = [];
+                }
+                $grouped[$cat][$code] = $item;
+            }
+
+            $this->jsonSuccess(['prices' => $grouped]);
+
+        } catch (\Exception $e) {
+            $this->jsonError('Erreur serveur', 500);
+        }
+    }
+
+    /**
+     * Traite les images uploadées
+     */
+    private function processUploadedImages(array $files): array
+    {
+        $imageUrls = [];
+        $uploadDir = __DIR__ . '/../../storage/uploads/';
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Normaliser la structure (simple ou multiple)
+        $images = [];
+        if (is_array($files['name'])) {
+            for ($i = 0; $i < count($files['name']); $i++) {
+                if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    $images[] = [
+                        'name' => $files['name'][$i],
+                        'tmp_name' => $files['tmp_name'][$i],
+                        'type' => $files['type'][$i],
+                        'size' => $files['size'][$i]
+                    ];
+                }
+            }
+        } else {
+            if ($files['error'] === UPLOAD_ERR_OK) {
+                $images[] = $files;
+            }
+        }
+
+        // Limiter à 4 images
+        $images = array_slice($images, 0, 4);
+
+        foreach ($images as $image) {
+            // Valider le type
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->file($image['tmp_name']);
+
+            if (!in_array($mimeType, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'])) {
+                continue;
+            }
+
+            // Vérifier la taille (max 5 MB par image)
+            if ($image['size'] > 5 * 1024 * 1024) {
+                continue;
+            }
+
+            // Convertir en base64 pour OpenAI
+            $content = file_get_contents($image['tmp_name']);
+            $base64 = base64_encode($content);
+            $imageUrls[] = "data:{$mimeType};base64,{$base64}";
+        }
+
+        return $imageUrls;
+    }
+
+    /**
+     * Vérifie le rate limit
+     */
+    private function checkRateLimit(string $endpoint): bool
+    {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+
+        if (!$this->rateLimiter->check($ip, $endpoint)) {
+            $retryAfter = $this->rateLimiter->getRetryAfter($ip, $endpoint);
+            header('Retry-After: ' . $retryAfter);
+            $this->jsonError('Trop de requêtes. Réessayez dans ' . $retryAfter . ' secondes.', 429);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Réponse JSON succès
+     */
+    private function jsonSuccess(array $data, int $code = 200): void
+    {
+        http_response_code($code);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => true,
+            'data' => $data
+        ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    }
+
+    /**
+     * Réponse JSON erreur
+     */
+    private function jsonError(string $message, int $code = 400): void
+    {
+        http_response_code($code);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => false,
+            'error' => $message
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Log d'erreur
+     */
+    private function logError(string $action, string $message): void
+    {
+        $this->log('ERROR', $action, $message);
+    }
+
+    /**
+     * Log d'info
+     */
+    private function logInfo(string $action, string $message, array $context = []): void
+    {
+        $this->log('INFO', $action, $message, $context);
+    }
+
+    /**
+     * Écriture de log
+     */
+    private function log(string $level, string $action, string $message, array $context = []): void
+    {
+        try {
+            $db = \App\Database\Connection::getInstance();
+            $stmt = $db->prepare(
+                "INSERT INTO logs (level, action, message, context, ip_address, user_agent)
+                 VALUES (:level, :action, :message, :context, :ip, :ua)"
+            );
+            $stmt->execute([
+                'level' => $level,
+                'action' => $action,
+                'message' => $message,
+                'context' => json_encode($context),
+                'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+                'ua' => $_SERVER['HTTP_USER_AGENT'] ?? null
+            ]);
+        } catch (\Exception $e) {
+            // Fallback fichier
+            $logFile = __DIR__ . '/../../storage/logs/app.log';
+            $logDir = dirname($logFile);
+            if (!is_dir($logDir)) {
+                mkdir($logDir, 0755, true);
+            }
+            file_put_contents(
+                $logFile,
+                date('Y-m-d H:i:s') . " [{$level}] {$action}: {$message}\n",
+                FILE_APPEND
+            );
+        }
+    }
+}

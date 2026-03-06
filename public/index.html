@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="description" content="Générateur de devis électrique intelligent par IA">
+
+    <title>Chiffreo - Devis Électrique IA</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/logo.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
+
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Trial Banner -->
+        <div id="trial-banner" class="trial-banner">
+            <i class="ph ph-crown"></i>
+            <span>Essai Pro : <strong class="trial-days">14</strong> jours restants</span>
+            <a href="./#tarifs" class="trial-link">Voir les offres</a>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <img src="icons/logo.png" alt="Chiffreo" class="logo-img">
+                    <span>Chiffreo</span>
+                </div>
+
+                <div class="header-actions">
+                    <button id="installBtn" class="btn-install" style="display: none;">
+                        <i class="ph ph-download-simple"></i>
+                        Installer
+                    </button>
+
+                    <!-- Bouton connexion (non connecté) -->
+                    <button id="login-btn" class="btn-login">
+                        <i class="ph ph-sign-in"></i>
+                        <span>Connexion</span>
+                    </button>
+
+                    <!-- Menu utilisateur (connecté) -->
+                    <div id="user-menu" class="user-menu">
+                        <span id="plan-badge" class="plan-badge" style="display: none;"></span>
+                        <button class="user-menu-toggle">
+                            <div class="user-avatar">
+                                <i class="ph ph-user"></i>
+                            </div>
+                            <span class="user-name">Utilisateur</span>
+                            <i class="ph ph-caret-down"></i>
+                        </button>
+                        <div class="user-dropdown">
+                            <a href="#" class="dropdown-item">
+                                <i class="ph ph-gear"></i>
+                                <span>Paramètres</span>
+                            </a>
+                            <a href="#" class="dropdown-item">
+                                <i class="ph ph-files"></i>
+                                <span>Mes devis</span>
+                            </a>
+                            <hr class="dropdown-divider">
+                            <button id="logout-btn" class="dropdown-item logout">
+                                <i class="ph ph-sign-out"></i>
+                                <span>Déconnexion</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Barre de quota (plan gratuit uniquement) -->
+            <div id="quota-bar" class="quota-bar">
+                <div class="quota-fill"></div>
+                <span class="quota-text">0/10 devis ce mois</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Section Création -->
+            <section class="section-create">
+                <div class="section-header">
+                    <h1>Créer un devis</h1>
+                    <p class="subtitle">Décrivez les travaux électriques, l'IA génère votre devis</p>
+                </div>
+
+                <!-- Indicateur d'étapes -->
+                <div class="steps-indicator">
+                    <div class="step active" data-step="1">
+                        <span class="step-number">1</span>
+                        <span class="step-label">Client</span>
+                    </div>
+                    <div class="step-connector"></div>
+                    <div class="step" data-step="2">
+                        <span class="step-number">2</span>
+                        <span class="step-label">Travaux</span>
+                    </div>
+                </div>
+
+                <form id="quoteForm" class="quote-form">
+
+                    <!-- ========================================== -->
+                    <!-- ÉTAPE 1 : INFORMATIONS CLIENT              -->
+                    <!-- Données JAMAIS envoyées à l'IA             -->
+                    <!-- ========================================== -->
+                    <div id="step1" class="form-step active">
+                        <div class="step-title">
+                            <i class="ph ph-user"></i>
+                            <span>Informations client</span>
+                            <span class="privacy-badge" title="Ces données restent sur votre appareil">
+                                <i class="ph ph-lock-simple"></i> Données privées
+                            </span>
+                        </div>
+
+                        <!-- Formulaire client -->
+                        <div class="form-row">
+                            <div class="form-group form-group-small">
+                                <label for="clientCivilite">Civilité</label>
+                                <select id="clientCivilite" name="client_civilite">
+                                    <option value="M.">M.</option>
+                                    <option value="Mme">Mme</option>
+                                    <option value="Société">Société</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="clientNom">Nom *</label>
+                                <input type="text" id="clientNom" name="client_nom" required placeholder="Dupont">
+                            </div>
+                            <div class="form-group">
+                                <label for="clientPrenom">Prénom</label>
+                                <input type="text" id="clientPrenom" name="client_prenom" placeholder="Jean">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="clientSociete">Société (si applicable)</label>
+                            <input type="text" id="clientSociete" name="client_societe" placeholder="Nom de l'entreprise">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="clientEmail">Email</label>
+                                <input type="email" id="clientEmail" name="client_email" placeholder="client@email.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="clientTelephone">Téléphone *</label>
+                                <input type="tel" id="clientTelephone" name="client_telephone" required placeholder="06 12 34 56 78">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="clientAdresse">Adresse</label>
+                            <input type="text" id="clientAdresse" name="client_adresse" placeholder="15 rue des Lilas">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group form-group-small">
+                                <label for="clientCodePostal">Code postal</label>
+                                <input type="text" id="clientCodePostal" name="client_cp" placeholder="75001">
+                            </div>
+                            <div class="form-group">
+                                <label for="clientVille">Ville</label>
+                                <input type="text" id="clientVille" name="client_ville" placeholder="Paris">
+                            </div>
+                        </div>
+
+                        <!-- Adresse chantier différente -->
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="chantierDifferent">
+                                <span>Adresse du chantier différente</span>
+                            </label>
+                        </div>
+
+                        <div id="chantierFields" class="chantier-fields" style="display: none;">
+                            <div class="form-group">
+                                <label for="chantierAdresse">Adresse du chantier</label>
+                                <input type="text" id="chantierAdresse" name="chantier_adresse" placeholder="Adresse du chantier">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group form-group-small">
+                                    <label for="chantierCodePostal">Code postal</label>
+                                    <input type="text" id="chantierCodePostal" name="chantier_cp" placeholder="75001">
+                                </div>
+                                <div class="form-group">
+                                    <label for="chantierVille">Ville</label>
+                                    <input type="text" id="chantierVille" name="chantier_ville" placeholder="Paris">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step-actions">
+                            <button type="button" id="nextStepBtn" class="btn-primary">
+                                <span>Suivant : Travaux</span>
+                                <i class="ph ph-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ========================================== -->
+                    <!-- ÉTAPE 2 : DESCRIPTION DES TRAVAUX          -->
+                    <!-- Cette partie est envoyée à l'IA            -->
+                    <!-- ========================================== -->
+                    <div id="step2" class="form-step" style="display: none;">
+                        <div class="step-title">
+                            <i class="ph ph-wrench"></i>
+                            <span>Description des travaux</span>
+                        </div>
+
+                        <!-- Résumé client -->
+                        <div id="clientSummary" class="client-summary">
+                            <div class="summary-content">
+                                <span id="clientSummaryText">Client non renseigné</span>
+                            </div>
+                            <button type="button" id="editClientBtn" class="btn-edit-client">
+                                <i class="ph ph-pencil-simple"></i>
+                            </button>
+                        </div>
+
+                        <!-- Zone de texte avec micro intégré -->
+                        <div class="form-group">
+                            <div class="label-with-mic">
+                                <label for="description">
+                                    <i class="ph ph-pencil-simple"></i>
+                                    Description des travaux
+                                </label>
+                                <button type="button" id="recordBtn" class="btn-mic-round" title="Dicter la description">
+                                    <i class="ph ph-microphone"></i>
+                                </button>
+                                <div id="recordingStatus" class="recording-status-inline" style="display: none;">
+                                    <span class="recording-dot"></span>
+                                    <span class="recording-time">00:00</span>
+                                    <button type="button" id="stopBtn" class="btn-stop-small">
+                                        <i class="ph ph-stop"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <textarea
+                                id="description"
+                                name="description"
+                                placeholder="Ex: Installer un digicode à l'entrée de l'immeuble avec raccordement sur la gâche existante. Le tableau est au sous-sol à environ 15m..."
+                                rows="5"
+                            ></textarea>
+                            <span class="char-count"><span id="charCount">0</span> caractères</span>
+
+                            <!-- Résultat transcription -->
+                            <div id="transcriptionResult" class="transcription-result" style="display: none;">
+                                <div class="transcription-header">
+                                    <i class="ph ph-check-circle"></i>
+                                    <span>Transcription</span>
+                                </div>
+                                <p id="transcriptionText"></p>
+                                <div class="transcription-actions">
+                                    <button type="button" id="appendTranscriptionBtn" class="btn-transcription-action">
+                                        <i class="ph ph-plus-circle"></i>
+                                        Compléter
+                                    </button>
+                                    <button type="button" id="resetTranscriptionBtn" class="btn-transcription-action btn-danger">
+                                        <i class="ph ph-trash"></i>
+                                        Réinitialiser
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload images -->
+                        <div class="form-group">
+                            <label>
+                                <i class="ph ph-images"></i>
+                                Photos du chantier (optionnel)
+                            </label>
+                            <div class="image-upload">
+                                <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                                <button type="button" id="addImageBtn" class="btn-add-image">
+                                    <i class="ph ph-plus"></i>
+                                    Ajouter des photos
+                                </button>
+                                <span class="upload-hint">Max 4 images, 5 MB chacune</span>
+                            </div>
+                            <div id="imagePreview" class="image-preview"></div>
+                        </div>
+
+                        <!-- Boutons étape 2 -->
+                        <div class="step-actions step-actions-between">
+                            <button type="button" id="prevStepBtn" class="btn-secondary">
+                                <i class="ph ph-arrow-left"></i>
+                                <span>Retour</span>
+                            </button>
+                            <button type="submit" id="generateBtn" class="btn-generate">
+                                <i class="ph ph-sparkle"></i>
+                                <span>Générer le devis</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Fin étape 2 -->
+
+                </form>
+
+                <!-- Loading state -->
+                <div id="loadingState" class="loading-state" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>Analyse en cours...</p>
+                    <span class="loading-hint">L'IA analyse votre demande et génère le devis</span>
+                </div>
+            </section>
+
+            <!-- Section Résultat -->
+            <section id="resultSection" class="section-result" style="display: none;">
+                <div class="result-header">
+                    <div class="result-title">
+                        <i class="ph ph-check-circle"></i>
+                        <div>
+                            <h2 id="quoteTitle">Devis généré</h2>
+                            <span id="quoteRef" class="quote-ref"></span>
+                        </div>
+                    </div>
+                    <div class="result-actions">
+                        <a id="pdfLink" href="#" target="_blank" class="btn-pdf">
+                            <i class="ph ph-file-pdf"></i>
+                            Voir PDF
+                        </a>
+                        <button id="newQuoteBtn" class="btn-new">
+                            <i class="ph ph-plus"></i>
+                            Nouveau
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chantier -->
+                <div class="result-card">
+                    <h3><i class="ph ph-map-pin"></i> Chantier</h3>
+                    <p id="chantierPerimetre"></p>
+                    <div id="chantierHypotheses" class="hypotheses-list"></div>
+                </div>
+
+                <!-- Questions -->
+                <div id="questionsCard" class="result-card card-warning" style="display: none;">
+                    <h3><i class="ph ph-warning"></i> Points à préciser</h3>
+                    <ul id="questionsList"></ul>
+                </div>
+
+                <!-- Tâches -->
+                <div class="result-card">
+                    <h3><i class="ph ph-list-checks"></i> Travaux prévus</h3>
+                    <div id="tachesList" class="taches-list"></div>
+                </div>
+
+                <!-- Devis détaillé -->
+                <div class="result-card">
+                    <h3><i class="ph ph-receipt"></i> Détail du devis</h3>
+                    <div class="table-wrapper">
+                        <table id="lignesTable" class="lignes-table editable">
+                            <thead>
+                                <tr>
+                                    <th>Désignation</th>
+                                    <th class="right">Qté</th>
+                                    <th class="right">P.U. HT</th>
+                                    <th class="right">Total HT</th>
+                                    <th class="actions-col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Bouton ajouter ligne -->
+                    <button type="button" id="addLineBtn" class="btn-add-line">
+                        <i class="ph ph-plus-circle"></i>
+                        Ajouter une ligne
+                    </button>
+
+                    <!-- Totaux -->
+                    <div class="totaux-section">
+                        <div class="totaux-line">
+                            <span>Total HT</span>
+                            <span id="totalHT" class="amount"></span>
+                        </div>
+                        <div class="totaux-line">
+                            <span>TVA (<span id="tauxTVA">20</span>%)</span>
+                            <span id="totalTVA" class="amount"></span>
+                        </div>
+                        <div class="totaux-line total-ttc">
+                            <span>Total TTC</span>
+                            <span id="totalTTC" class="amount"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exclusions -->
+                <div id="exclusionsCard" class="result-card" style="display: none;">
+                    <h3><i class="ph ph-x-circle"></i> Non inclus</h3>
+                    <ul id="exclusionsList"></ul>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Chiffreo &copy; 2026 &mdash; Propulsé par MSConseil</p>
+            <div class="footer-links">
+                <a href="confidentialite.html">Politique de confidentialité</a>
+                <a href="mentions-legales.html">Mentions légales</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal édition ligne -->
+    <div id="editLineModal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Modifier la ligne</h3>
+                <button type="button" class="modal-close" id="closeModalBtn">
+                    <i class="ph ph-x"></i>
+                </button>
+            </div>
+            <form id="editLineForm" class="modal-body">
+                <input type="hidden" id="editLineIndex">
+
+                <!-- Dictée vocale -->
+                <div class="voice-input-section">
+                    <button type="button" id="modalRecordBtn" class="btn-voice-input">
+                        <i class="ph ph-microphone"></i>
+                        <span>Dicter la ligne</span>
+                    </button>
+                    <div id="modalRecordingStatus" class="modal-recording-status" style="display: none;">
+                        <span class="recording-dot"></span>
+                        <span class="modal-recording-time">00:00</span>
+                        <button type="button" id="modalStopBtn" class="btn-stop-small">
+                            <i class="ph ph-stop"></i>
+                        </button>
+                    </div>
+                    <p class="voice-hint">Ex: "15 mètres de câble R2V 3G2.5 à 3 euros le mètre"</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="editCategorie">Catégorie</label>
+                    <select id="editCategorie" required>
+                        <option value="materiel">Fournitures</option>
+                        <option value="main_oeuvre">Main d'œuvre</option>
+                        <option value="forfait">Forfait</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="editDesignation">Désignation</label>
+                    <input type="text" id="editDesignation" required placeholder="Ex: Câble R2V 3G2.5">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editQuantite">Quantité</label>
+                        <input type="number" id="editQuantite" required min="0.01" step="0.01" value="1">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editUnite">Unité</label>
+                        <input type="text" id="editUnite" placeholder="m, h, u" value="u">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editPrixUnitaire">Prix unitaire HT (€)</label>
+                        <input type="number" id="editPrixUnitaire" required min="0" step="0.01" value="0">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Total ligne HT</label>
+                    <div id="editTotalLigne" class="total-preview">0,00 €</div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" id="cancelEditBtn" class="btn-secondary">Annuler</button>
+                <button type="button" id="saveLineBtn" class="btn-primary">
+                    <i class="ph ph-check"></i>
+                    Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

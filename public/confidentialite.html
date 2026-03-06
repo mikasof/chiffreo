@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a5f">
+    <meta name="description" content="Politique de confidentialité et protection des données personnelles - Chiffreo">
+    <meta name="robots" content="noindex, nofollow">
+
+    <title>Politique de confidentialité - Chiffreo</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
+
+    <link rel="stylesheet" href="css/app.css">
+    <style>
+        .legal-page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        .legal-header {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .legal-header h1 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .legal-header .last-update {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .legal-section {
+            margin-bottom: 2.5rem;
+        }
+
+        .legal-section h2 {
+            font-size: 1.4rem;
+            color: var(--text);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-light);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .legal-section h2 i {
+            color: var(--primary);
+        }
+
+        .legal-section h3 {
+            font-size: 1.1rem;
+            color: var(--text);
+            margin: 1.5rem 0 0.75rem;
+        }
+
+        .legal-section p,
+        .legal-section li {
+            color: var(--text-light);
+            line-height: 1.7;
+            margin-bottom: 0.75rem;
+        }
+
+        .legal-section ul {
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .legal-section li {
+            margin-bottom: 0.5rem;
+        }
+
+        .highlight-box {
+            background: var(--primary-light);
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.25rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.5rem 0;
+        }
+
+        .highlight-box.privacy {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+            border-left-color: #22c55e;
+        }
+
+        .highlight-box p {
+            margin: 0;
+            color: var(--text);
+        }
+
+        .highlight-box strong {
+            color: var(--primary);
+        }
+
+        .highlight-box.privacy strong {
+            color: #16a34a;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+
+        .data-table th {
+            background: var(--primary-light);
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .data-table td {
+            color: var(--text-light);
+        }
+
+        .data-table tr:nth-child(even) {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .contact-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .contact-card h4 {
+            color: var(--text);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .contact-card p {
+            margin: 0.25rem 0;
+        }
+
+        .contact-card a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .contact-card a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 2rem;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .toc {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .toc h3 {
+            margin: 0 0 1rem 0;
+            color: var(--text);
+        }
+
+        .toc ol {
+            margin: 0;
+            padding-left: 1.25rem;
+        }
+
+        .toc li {
+            margin-bottom: 0.5rem;
+        }
+
+        .toc a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        .badge-local {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .badge-external {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: rgba(249, 115, 22, 0.15);
+            color: #ea580c;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .legal-page {
+                padding: 1rem 1rem 3rem;
+            }
+
+            .legal-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .legal-section h2 {
+                font-size: 1.2rem;
+            }
+
+            .data-table {
+                font-size: 0.8rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <a href="index.html" class="logo">
+                    <img src="icons/logo.png" alt="Chiffreo" class="logo-img">
+                    <span>Chiffreo</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div class="legal-page">
+                <a href="index.html" class="back-link">
+                    <i class="ph ph-arrow-left"></i>
+                    Retour à l'accueil
+                </a>
+
+                <div class="legal-header">
+                    <h1>Politique de confidentialité</h1>
+                    <p class="last-update">Dernière mise à jour : 5 mars 2026</p>
+                </div>
+
+                <!-- Table des matières -->
+                <nav class="toc">
+                    <h3>Sommaire</h3>
+                    <ol>
+                        <li><a href="#responsable">Responsable du traitement</a></li>
+                        <li><a href="#donnees-collectees">Données collectées</a></li>
+                        <li><a href="#finalites">Finalités et bases légales</a></li>
+                        <li><a href="#protection-ia">Protection des données et Intelligence Artificielle</a></li>
+                        <li><a href="#destinataires">Destinataires des données</a></li>
+                        <li><a href="#transferts">Transferts hors UE</a></li>
+                        <li><a href="#conservation">Durée de conservation</a></li>
+                        <li><a href="#securite">Sécurité des données</a></li>
+                        <li><a href="#droits">Vos droits</a></li>
+                        <li><a href="#cookies">Cookies</a></li>
+                        <li><a href="#modifications">Modifications</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ol>
+                </nav>
+
+                <!-- Introduction -->
+                <div class="legal-section">
+                    <p>
+                        La société MSConseil, éditrice du service Chiffreo accessible à l'adresse
+                        <strong>https://chiffreo.fr</strong>, attache une importance particulière à la
+                        protection de vos données personnelles et au respect de votre vie privée.
+                    </p>
+                    <p>
+                        La présente politique de confidentialité vous informe de la manière dont nous collectons,
+                        utilisons et protégeons vos données personnelles, conformément au Règlement Général sur
+                        la Protection des Données (RGPD - Règlement UE 2016/679) et à la loi Informatique et
+                        Libertés du 6 janvier 1978 modifiée.
+                    </p>
+                </div>
+
+                <!-- 1. Responsable du traitement -->
+                <section id="responsable" class="legal-section">
+                    <h2><i class="ph ph-identification-card"></i> 1. Responsable du traitement</h2>
+
+                    <div class="contact-card">
+                        <h4><i class="ph ph-buildings"></i> Éditeur et responsable du traitement</h4>
+                        <p><strong>MSConseil</strong></p>
+                        <p>Société par actions simplifiée (SAS)</p>
+                        <p>Siège social : [Adresse à compléter]</p>
+                        <p>SIRET : [Numéro à compléter]</p>
+                        <p>Email : <a href="mailto:contact@chiffreo.fr">contact@chiffreo.fr</a></p>
+                        <p>Téléphone : [Numéro à compléter]</p>
+                    </div>
+
+                    <div class="contact-card">
+                        <h4><i class="ph ph-user-circle"></i> Directeur de la publication</h4>
+                        <p>[Nom du directeur de publication à compléter]</p>
+                    </div>
+
+                    <div class="contact-card">
+                        <h4><i class="ph ph-cloud"></i> Hébergement</h4>
+                        <p><strong>[Nom de l'hébergeur à compléter]</strong></p>
+                        <p>Adresse : [Adresse de l'hébergeur]</p>
+                        <p>Les données sont hébergées en France / Union Européenne.</p>
+                    </div>
+                </section>
+
+                <!-- 2. Données collectées -->
+                <section id="donnees-collectees" class="legal-section">
+                    <h2><i class="ph ph-database"></i> 2. Données collectées</h2>
+
+                    <p>Dans le cadre de l'utilisation de Chiffreo, nous sommes amenés à collecter et traiter les catégories de données suivantes :</p>
+
+                    <h3>2.1 Données d'identification client <span class="badge-local"><i class="ph ph-lock-simple"></i> Stockage local</span></h3>
+                    <ul>
+                        <li>Civilité, nom et prénom</li>
+                        <li>Raison sociale (pour les professionnels)</li>
+                        <li>Adresse postale</li>
+                        <li>Adresse email</li>
+                        <li>Numéro de téléphone</li>
+                    </ul>
+
+                    <div class="highlight-box privacy">
+                        <p><strong><i class="ph ph-shield-check"></i> Protection renforcée :</strong> Les données d'identification client sont stockées exclusivement sur nos serveurs en France et ne sont <strong>JAMAIS transmises</strong> aux services d'intelligence artificielle tiers (OpenAI). Cette séparation garantit la confidentialité de vos informations personnelles.</p>
+                    </div>
+
+                    <h3>2.2 Données relatives aux devis</h3>
+                    <ul>
+                        <li>Description des travaux électriques à réaliser</li>
+                        <li>Adresse du chantier (si différente de l'adresse client)</li>
+                        <li>Photos du chantier (optionnel)</li>
+                        <li>Enregistrements audio de la description des travaux</li>
+                        <li>Détails du devis généré (lignes, montants, etc.)</li>
+                    </ul>
+
+                    <h3>2.3 Données techniques</h3>
+                    <ul>
+                        <li>Adresse IP</li>
+                        <li>Type de navigateur et système d'exploitation</li>
+                        <li>Date et heure des connexions</li>
+                        <li>Pages consultées</li>
+                    </ul>
+
+                    <h3>2.4 Données non collectées</h3>
+                    <p>Nous ne collectons pas :</p>
+                    <ul>
+                        <li>Données bancaires ou de paiement</li>
+                        <li>Numéro de sécurité sociale</li>
+                        <li>Données de géolocalisation en temps réel</li>
+                        <li>Données sensibles au sens de l'article 9 du RGPD</li>
+                    </ul>
+                </section>
+
+                <!-- 3. Finalités et bases légales -->
+                <section id="finalites" class="legal-section">
+                    <h2><i class="ph ph-target"></i> 3. Finalités et bases légales</h2>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Finalité</th>
+                                <th>Base légale</th>
+                                <th>Données concernées</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Génération de devis électriques</td>
+                                <td>Exécution d'un contrat</td>
+                                <td>Description travaux, photos, adresse chantier</td>
+                            </tr>
+                            <tr>
+                                <td>Identification du client destinataire du devis</td>
+                                <td>Exécution d'un contrat</td>
+                                <td>Nom, adresse, email, téléphone</td>
+                            </tr>
+                            <tr>
+                                <td>Conservation et historique des devis</td>
+                                <td>Obligation légale (facturation)</td>
+                                <td>Ensemble des données du devis</td>
+                            </tr>
+                            <tr>
+                                <td>Amélioration du service</td>
+                                <td>Intérêt légitime</td>
+                                <td>Données techniques anonymisées</td>
+                            </tr>
+                            <tr>
+                                <td>Sécurité et prévention des fraudes</td>
+                                <td>Intérêt légitime</td>
+                                <td>Adresse IP, logs de connexion</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <!-- 4. Protection IA -->
+                <section id="protection-ia" class="legal-section">
+                    <h2><i class="ph ph-robot"></i> 4. Protection des données et Intelligence Artificielle</h2>
+
+                    <p>Chiffreo utilise des technologies d'intelligence artificielle pour analyser vos descriptions de travaux et générer des devis. Nous avons mis en place une architecture spécifique pour protéger vos données personnelles :</p>
+
+                    <h3>4.1 Séparation stricte des données</h3>
+
+                    <div class="highlight-box privacy">
+                        <p><strong>Données JAMAIS envoyées à l'IA :</strong></p>
+                        <ul style="margin: 0.5rem 0 0 1rem; color: var(--text);">
+                            <li>Nom et prénom du client</li>
+                            <li>Adresse postale du client</li>
+                            <li>Email et téléphone</li>
+                            <li>Raison sociale</li>
+                        </ul>
+                    </div>
+
+                    <p><strong>Données transmises à l'IA (OpenAI) :</strong></p>
+                    <ul>
+                        <li>Description textuelle des travaux à réaliser</li>
+                        <li>Transcription audio de la description des travaux</li>
+                        <li>Photos du chantier (pour analyse visuelle)</li>
+                        <li>Adresse du chantier (uniquement pour contextualiser les travaux)</li>
+                    </ul>
+
+                    <h3>4.2 Transcription audio</h3>
+                    <p>Le service de transcription audio (Whisper d'OpenAI) convertit vos enregistrements vocaux en texte. Les fichiers audio sont :</p>
+                    <ul>
+                        <li>Transmis de manière sécurisée (chiffrement HTTPS)</li>
+                        <li>Traités uniquement pour la transcription</li>
+                        <li>Supprimés immédiatement après transcription</li>
+                        <li>Non utilisés pour l'entraînement des modèles d'IA</li>
+                    </ul>
+
+                    <h3>4.3 Engagement d'OpenAI</h3>
+                    <p>Conformément aux conditions d'utilisation de l'API OpenAI :</p>
+                    <ul>
+                        <li>Les données transmises via l'API ne sont pas utilisées pour entraîner les modèles</li>
+                        <li>Les données sont supprimées après 30 jours maximum</li>
+                        <li>OpenAI est certifié SOC 2 Type 2</li>
+                    </ul>
+                </section>
+
+                <!-- 5. Destinataires -->
+                <section id="destinataires" class="legal-section">
+                    <h2><i class="ph ph-users-three"></i> 5. Destinataires des données</h2>
+
+                    <p>Vos données personnelles peuvent être communiquées aux destinataires suivants :</p>
+
+                    <h3>5.1 Destinataires internes</h3>
+                    <ul>
+                        <li>Personnel habilité de MSConseil (support technique, administration)</li>
+                    </ul>
+
+                    <h3>5.2 Sous-traitants</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Sous-traitant</th>
+                                <th>Service fourni</th>
+                                <th>Localisation</th>
+                                <th>Données concernées</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>OpenAI</td>
+                                <td>Transcription audio et analyse IA</td>
+                                <td>États-Unis</td>
+                                <td>Description travaux, photos <span class="badge-external">Hors UE</span></td>
+                            </tr>
+                            <tr>
+                                <td>[Hébergeur]</td>
+                                <td>Hébergement serveurs</td>
+                                <td>France</td>
+                                <td>Toutes données <span class="badge-local">Local</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>5.3 Autres destinataires</h3>
+                    <p>Vos données peuvent également être communiquées :</p>
+                    <ul>
+                        <li>Aux autorités administratives ou judiciaires, sur réquisition légale</li>
+                        <li>Aux organismes de contrôle (CNIL) dans le cadre de leurs missions</li>
+                    </ul>
+
+                    <p><strong>Nous ne vendons jamais vos données personnelles à des tiers.</strong></p>
+                </section>
+
+                <!-- 6. Transferts hors UE -->
+                <section id="transferts" class="legal-section">
+                    <h2><i class="ph ph-globe"></i> 6. Transferts de données hors Union Européenne</h2>
+
+                    <p>Certaines données sont transférées vers les États-Unis dans le cadre de l'utilisation des services OpenAI :</p>
+
+                    <h3>6.1 Données concernées par le transfert</h3>
+                    <ul>
+                        <li>Description des travaux (texte et audio)</li>
+                        <li>Photos du chantier</li>
+                    </ul>
+
+                    <div class="highlight-box privacy">
+                        <p><strong><i class="ph ph-shield-check"></i> Rappel important :</strong> Les données d'identification personnelle (nom, adresse, email, téléphone) ne sont <strong>jamais transférées</strong> hors de l'Union Européenne.</p>
+                    </div>
+
+                    <h3>6.2 Garanties mises en place</h3>
+                    <p>Ces transferts sont encadrés par :</p>
+                    <ul>
+                        <li>Le Data Privacy Framework (DPF) UE-États-Unis, auquel OpenAI adhère</li>
+                        <li>Les Clauses Contractuelles Types (CCT) de la Commission Européenne</li>
+                        <li>Les mesures de sécurité techniques et organisationnelles d'OpenAI</li>
+                    </ul>
+
+                    <p>Vous pouvez obtenir une copie des garanties appropriées en nous contactant à l'adresse indiquée en fin de document.</p>
+                </section>
+
+                <!-- 7. Conservation -->
+                <section id="conservation" class="legal-section">
+                    <h2><i class="ph ph-clock"></i> 7. Durée de conservation</h2>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Type de données</th>
+                                <th>Durée de conservation</th>
+                                <th>Justification</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Données clients (nom, adresse, contact)</td>
+                                <td>3 ans après le dernier devis</td>
+                                <td>Relation commerciale</td>
+                            </tr>
+                            <tr>
+                                <td>Devis et documents associés</td>
+                                <td>10 ans</td>
+                                <td>Obligations comptables et fiscales</td>
+                            </tr>
+                            <tr>
+                                <td>Fichiers audio (transcription)</td>
+                                <td>Suppression immédiate après transcription</td>
+                                <td>Minimisation des données</td>
+                            </tr>
+                            <tr>
+                                <td>Photos du chantier</td>
+                                <td>Durée du devis + 1 an</td>
+                                <td>Référence pour modifications</td>
+                            </tr>
+                            <tr>
+                                <td>Logs de connexion</td>
+                                <td>1 an</td>
+                                <td>Obligation légale (LCEN)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <p>À l'issue de ces durées, les données sont supprimées ou anonymisées de manière irréversible.</p>
+                </section>
+
+                <!-- 8. Sécurité -->
+                <section id="securite" class="legal-section">
+                    <h2><i class="ph ph-shield-check"></i> 8. Sécurité des données</h2>
+
+                    <p>Nous mettons en œuvre les mesures techniques et organisationnelles appropriées pour garantir la sécurité de vos données :</p>
+
+                    <h3>8.1 Mesures techniques</h3>
+                    <ul>
+                        <li><strong>Chiffrement HTTPS/TLS</strong> pour toutes les communications</li>
+                        <li><strong>Chiffrement des données</strong> sensibles en base de données</li>
+                        <li><strong>Pare-feu et protection DDoS</strong></li>
+                        <li><strong>Sauvegardes régulières</strong> et plan de reprise d'activité</li>
+                        <li><strong>Mises à jour de sécurité</strong> régulières des systèmes</li>
+                    </ul>
+
+                    <h3>8.2 Mesures organisationnelles</h3>
+                    <ul>
+                        <li>Accès aux données limité au personnel strictement habilité</li>
+                        <li>Authentification forte pour l'accès aux systèmes</li>
+                        <li>Sensibilisation du personnel à la protection des données</li>
+                        <li>Procédure de gestion des incidents de sécurité</li>
+                    </ul>
+
+                    <h3>8.3 Notification des violations</h3>
+                    <p>En cas de violation de données susceptible d'engendrer un risque élevé pour vos droits et libertés, nous nous engageons à vous en informer dans les meilleurs délais, conformément à l'article 34 du RGPD.</p>
+                </section>
+
+                <!-- 9. Vos droits -->
+                <section id="droits" class="legal-section">
+                    <h2><i class="ph ph-user-check"></i> 9. Vos droits</h2>
+
+                    <p>Conformément au RGPD, vous disposez des droits suivants sur vos données personnelles :</p>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Droit</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Droit d'accès</strong></td>
+                                <td>Obtenir confirmation du traitement de vos données et en recevoir une copie</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Droit de rectification</strong></td>
+                                <td>Demander la correction de données inexactes ou incomplètes</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Droit à l'effacement</strong></td>
+                                <td>Demander la suppression de vos données (« droit à l'oubli »)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Droit à la limitation</strong></td>
+                                <td>Demander la suspension temporaire du traitement</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Droit à la portabilité</strong></td>
+                                <td>Recevoir vos données dans un format structuré et lisible</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Droit d'opposition</strong></td>
+                                <td>Vous opposer au traitement pour motifs légitimes</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Directives post-mortem</strong></td>
+                                <td>Définir des directives relatives au sort de vos données après votre décès</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>9.1 Comment exercer vos droits ?</h3>
+                    <p>Vous pouvez exercer vos droits à tout moment :</p>
+
+                    <div class="contact-card">
+                        <h4><i class="ph ph-envelope"></i> Par email</h4>
+                        <p><a href="mailto:rgpd@chiffreo.fr">rgpd@chiffreo.fr</a></p>
+                    </div>
+
+                    <div class="contact-card">
+                        <h4><i class="ph ph-mailbox"></i> Par courrier postal</h4>
+                        <p>MSConseil - Service Protection des Données</p>
+                        <p>[Adresse postale à compléter]</p>
+                    </div>
+
+                    <p>Nous nous engageons à répondre à votre demande dans un délai d'<strong>un mois</strong> à compter de sa réception. Ce délai peut être prolongé de deux mois en cas de demande complexe, auquel cas vous en serez informé.</p>
+
+                    <h3>9.2 Réclamation auprès de la CNIL</h3>
+                    <p>Si vous estimez que vos droits ne sont pas respectés, vous pouvez introduire une réclamation auprès de la Commission Nationale de l'Informatique et des Libertés (CNIL) :</p>
+
+                    <div class="contact-card">
+                        <h4><i class="ph ph-buildings"></i> CNIL</h4>
+                        <p>3 Place de Fontenoy - TSA 80715</p>
+                        <p>75334 Paris Cedex 07</p>
+                        <p>Site web : <a href="https://www.cnil.fr" target="_blank" rel="noopener">www.cnil.fr</a></p>
+                    </div>
+                </section>
+
+                <!-- 10. Cookies -->
+                <section id="cookies" class="legal-section">
+                    <h2><i class="ph ph-cookie"></i> 10. Cookies et traceurs</h2>
+
+                    <h3>10.1 Qu'est-ce qu'un cookie ?</h3>
+                    <p>Un cookie est un petit fichier texte déposé sur votre terminal (ordinateur, tablette, smartphone) lors de la visite d'un site web.</p>
+
+                    <h3>10.2 Cookies utilisés par Chiffreo</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Finalité</th>
+                                <th>Durée</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>session_id</td>
+                                <td>Maintien de la session utilisateur</td>
+                                <td>Session (supprimé à la fermeture)</td>
+                                <td>Strictement nécessaire</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>10.3 Cookies tiers</h3>
+                    <p>À ce jour, Chiffreo n'utilise <strong>aucun cookie tiers</strong> (analytics, publicité, réseaux sociaux).</p>
+
+                    <h3>10.4 Gestion des cookies</h3>
+                    <p>Vous pouvez à tout moment gérer vos préférences en matière de cookies via les paramètres de votre navigateur. Notez que le blocage des cookies strictement nécessaires peut empêcher le bon fonctionnement du service.</p>
+                </section>
+
+                <!-- 11. Modifications -->
+                <section id="modifications" class="legal-section">
+                    <h2><i class="ph ph-pencil-simple"></i> 11. Modifications de la politique</h2>
+
+                    <p>Nous nous réservons le droit de modifier la présente politique de confidentialité à tout moment, notamment pour nous conformer à toute évolution légale, réglementaire ou technologique.</p>
+
+                    <p>En cas de modification substantielle, nous vous en informerons par un avis visible sur notre site ou par email si vous êtes un utilisateur enregistré.</p>
+
+                    <p>La date de dernière mise à jour est indiquée en haut de ce document.</p>
+                </section>
+
+                <!-- 12. Contact -->
+                <section id="contact" class="legal-section">
+                    <h2><i class="ph ph-chat-circle"></i> 12. Contact</h2>
+
+                    <p>Pour toute question relative à la présente politique de confidentialité ou au traitement de vos données personnelles, vous pouvez nous contacter :</p>
+
+                    <div class="contact-card">
+                        <h4><i class="ph ph-envelope"></i> Contact Protection des Données</h4>
+                        <p><strong>Email :</strong> <a href="mailto:rgpd@chiffreo.fr">rgpd@chiffreo.fr</a></p>
+                        <p><strong>Adresse :</strong> MSConseil - [Adresse à compléter]</p>
+                        <p><strong>Téléphone :</strong> [Numéro à compléter]</p>
+                    </div>
+
+                    <p>Nous nous engageons à traiter votre demande avec diligence et à vous apporter une réponse dans les meilleurs délais.</p>
+                </section>
+
+                <a href="index.html" class="back-link" style="margin-top: 2rem;">
+                    <i class="ph ph-arrow-left"></i>
+                    Retour à l'accueil
+                </a>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Chiffreo &copy; 2026 &mdash; Propulsé par MSConseil</p>
+            <div class="footer-links">
+                <a href="confidentialite.html">Politique de confidentialité</a>
+                <a href="mentions-legales.html">Mentions légales</a>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
