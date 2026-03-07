@@ -525,10 +525,58 @@ class ApiController
                 return;
             }
 
-            // Générer le PDF
+            // Récupérer les données de l'entreprise
+            $company = [];
+            if (!empty($quote['company_id'])) {
+                $companyData = $this->companyRepo->findById((int) $quote['company_id']);
+                if ($companyData) {
+                    $company = [
+                        'name' => $companyData['name'] ?? '',
+                        'siret' => $companyData['siret'] ?? '',
+                        'phone' => $companyData['phone'] ?? '',
+                        'email' => $companyData['email_contact'] ?? '',
+                        'address_line1' => $companyData['address_line1'] ?? '',
+                        'address_line2' => $companyData['address_line2'] ?? '',
+                        'postal_code' => $companyData['postal_code'] ?? '',
+                        'city' => $companyData['city'] ?? '',
+                        'logo_path' => $companyData['logo_path'] ?? '',
+                        'legal_form' => $companyData['legal_form'] ?? '',
+                        'capital' => $companyData['capital'] ?? '',
+                        'rcs_number' => $companyData['rcs_number'] ?? '',
+                        'rcs_city' => $companyData['rcs_city'] ?? '',
+                        'vat_number' => $companyData['vat_number'] ?? '',
+                        'insurance_name' => $companyData['insurance_name'] ?? '',
+                        'insurance_number' => $companyData['insurance_number'] ?? '',
+                        'insurance_coverage' => $companyData['insurance_coverage'] ?? '',
+                        'default_tva_rate' => $companyData['default_tva_rate'] ?? 20.00,
+                        'quote_validity_days' => $companyData['quote_validity_days'] ?? 30,
+                    ];
+                }
+            }
+
+            // Construire les données client depuis le devis
+            $client = [
+                'nom' => $quote['client_name'] ?? '',
+                'societe' => $quote['client_company'] ?? '',
+                'email' => $quote['client_email'] ?? '',
+                'telephone' => $quote['client_phone'] ?? '',
+                'adresse' => $quote['client_address'] ?? '',
+            ];
+
+            // Construire les données chantier
+            $chantierInfo = [
+                'adresse' => $quote['chantier_adresse'] ?? '',
+                'codePostal' => $quote['chantier_code_postal'] ?? '',
+                'ville' => $quote['chantier_ville'] ?? '',
+            ];
+
+            // Générer le PDF avec toutes les données
             $pdf = $this->pdfRenderer->render(
                 $quote['quote_data'],
-                $quote['reference']
+                $quote['reference'],
+                $company,
+                $client,
+                $chantierInfo
             );
 
             // Headers pour téléchargement PDF

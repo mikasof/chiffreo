@@ -20,7 +20,7 @@
     <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
 
     <link rel="stylesheet" href="css/app.css">
-    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/settings.css?v=3">
 </head>
 <body>
     <div id="app">
@@ -33,9 +33,9 @@
                 </a>
 
                 <div class="header-actions">
-                    <a href="index.html" class="btn-back-app">
-                        <i class="ph ph-arrow-left"></i>
-                        <span>Retour à l'app</span>
+                    <a href="index.html" class="btn-new-quote">
+                        <i class="ph ph-plus-circle"></i>
+                        <span>Nouveau devis</span>
                     </a>
 
                     <div id="user-menu" class="user-menu">
@@ -144,6 +144,38 @@
                                         <input type="text" id="vat-number" placeholder="FR12345678901">
                                     </div>
                                 </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="legal-form">Forme juridique *</label>
+                                        <select id="legal-form">
+                                            <option value="">Sélectionner...</option>
+                                            <option value="EI">Entrepreneur Individuel (EI)</option>
+                                            <option value="EIRL">EIRL</option>
+                                            <option value="Auto-entrepreneur">Auto-entrepreneur / Micro-entreprise</option>
+                                            <option value="EURL">EURL</option>
+                                            <option value="SARL">SARL</option>
+                                            <option value="SAS">SAS</option>
+                                            <option value="SASU">SASU</option>
+                                            <option value="SA">SA</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" id="capital-group" style="display: none;">
+                                        <label for="capital">Capital social (€)</label>
+                                        <input type="text" id="capital" placeholder="10 000">
+                                    </div>
+                                </div>
+
+                                <div class="form-row" id="rcs-group" style="display: none;">
+                                    <div class="form-group">
+                                        <label for="rcs-number">N° RCS</label>
+                                        <input type="text" id="rcs-number" placeholder="123 456 789">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="rcs-city">Ville du greffe</label>
+                                        <input type="text" id="rcs-city" placeholder="Paris">
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="form-section">
@@ -183,17 +215,24 @@
                             </div>
 
                             <div class="form-section">
-                                <h3 class="form-section-title">Assurance</h3>
+                                <h3 class="form-section-title">Assurance décennale</h3>
+                                <p class="section-desc" style="margin-bottom: var(--space-4);">Obligatoire pour les métiers du bâtiment</p>
 
                                 <div class="form-row">
                                     <div class="form-group">
-                                        <label for="insurance-name">Assurance décennale</label>
+                                        <label for="insurance-name">Nom de l'assureur *</label>
                                         <input type="text" id="insurance-name" placeholder="Ex: AXA Assurances">
                                     </div>
                                     <div class="form-group">
-                                        <label for="insurance-number">N° de police</label>
+                                        <label for="insurance-number">N° de police *</label>
                                         <input type="text" id="insurance-number" placeholder="123456789">
                                     </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="insurance-coverage">Couverture géographique *</label>
+                                    <input type="text" id="insurance-coverage" placeholder="Ex: France métropolitaine">
+                                    <span class="field-hint">Zone couverte par votre assurance décennale</span>
                                 </div>
                             </div>
 
@@ -414,6 +453,6 @@
     <div id="toastContainer" class="toast-container"></div>
 
     <script src="js/config.js?v=5"></script>
-    <script src="js/settings.js?v=1"></script>
+    <script src="js/settings.js?v=3"></script>
 </body>
 </html>

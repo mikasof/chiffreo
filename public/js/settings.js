@@ -64,6 +64,9 @@
         document.getElementById('supplier-discount').addEventListener('input', updatePricingExample);
         document.getElementById('product-margin').addEventListener('input', updatePricingExample);
 
+        // Legal form change (show/hide capital and RCS fields)
+        document.getElementById('legal-form').addEventListener('change', handleLegalFormChange);
+
         // Logo upload
         document.getElementById('upload-logo-btn').addEventListener('click', () => {
             document.getElementById('logo-input').click();
@@ -160,6 +163,14 @@
         setValue('email-pro', user.email);
         setValue('insurance-name', user.insurance_name);
         setValue('insurance-number', user.insurance_number);
+        setValue('insurance-coverage', user.insurance_coverage);
+
+        // Legal form and related fields
+        setValue('legal-form', user.legal_form);
+        setValue('capital', user.capital);
+        setValue('rcs-number', user.rcs_number);
+        setValue('rcs-city', user.rcs_city);
+        handleLegalFormChange(); // Show/hide fields based on legal form
 
         // Logo
         if (user.logo_path) {
@@ -334,6 +345,17 @@
     // ============================================
     // Company Form
     // ============================================
+    function handleLegalFormChange() {
+        const legalForm = document.getElementById('legal-form').value;
+
+        // Formes juridiques qui requièrent capital et RCS
+        const requiresCapital = ['EURL', 'SARL', 'SAS', 'SASU', 'SA'];
+        const showCapitalRcs = requiresCapital.includes(legalForm);
+
+        document.getElementById('capital-group').style.display = showCapitalRcs ? 'block' : 'none';
+        document.getElementById('rcs-group').style.display = showCapitalRcs ? 'flex' : 'none';
+    }
+
     async function handleCompanySubmit(e) {
         e.preventDefault();
 
@@ -345,13 +367,18 @@
             company_name: document.getElementById('company-name').value,
             siret: document.getElementById('siret').value,
             vat_number: document.getElementById('vat-number').value,
+            legal_form: document.getElementById('legal-form').value,
+            capital: document.getElementById('capital').value,
+            rcs_number: document.getElementById('rcs-number').value,
+            rcs_city: document.getElementById('rcs-city').value,
             address_line1: document.getElementById('address-line1').value,
             address_line2: document.getElementById('address-line2').value,
             postal_code: document.getElementById('postal-code').value,
             city: document.getElementById('city').value,
             phone: document.getElementById('phone').value,
             insurance_name: document.getElementById('insurance-name').value,
-            insurance_number: document.getElementById('insurance-number').value
+            insurance_number: document.getElementById('insurance-number').value,
+            insurance_coverage: document.getElementById('insurance-coverage').value
         };
 
         try {

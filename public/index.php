@@ -159,13 +159,18 @@ try {
             'name' => $input['company_name'] ?? null,
             'siret' => $input['siret'] ?? null,
             'vat_number' => $input['vat_number'] ?? null,
+            'legal_form' => $input['legal_form'] ?? null,
+            'capital' => $input['capital'] ?? null,
+            'rcs_number' => $input['rcs_number'] ?? null,
+            'rcs_city' => $input['rcs_city'] ?? null,
             'phone' => $input['phone'] ?? null,
             'address_line1' => $input['address_line1'] ?? null,
             'address_line2' => $input['address_line2'] ?? null,
             'postal_code' => $input['postal_code'] ?? null,
             'city' => $input['city'] ?? null,
             'insurance_name' => $input['insurance_name'] ?? null,
-            'insurance_number' => $input['insurance_number'] ?? null
+            'insurance_number' => $input['insurance_number'] ?? null,
+            'insurance_coverage' => $input['insurance_coverage'] ?? null
         ];
 
         // Check if profile is complete

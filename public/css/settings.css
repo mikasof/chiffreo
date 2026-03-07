@@ -27,26 +27,31 @@
     font-size: 1.5em;
 }
 
-/* === Back Button === */
-.btn-back-app {
+/* === New Quote Button === */
+.btn-new-quote {
     display: flex;
     align-items: center;
     gap: var(--space-2);
     padding: var(--space-2) var(--space-4);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: var(--color-accent);
+    border: none;
     border-radius: var(--radius-md);
-    color: var(--color-text);
+    color: white;
     text-decoration: none;
     font-size: var(--font-size-sm);
-    font-weight: 500;
+    font-weight: 600;
     transition: var(--transition-fast);
+    box-shadow: 0 2px 8px rgba(236, 152, 36, 0.3);
 }
 
-.btn-back-app:hover {
-    background: var(--color-bg);
-    border-color: var(--color-primary);
-    color: var(--color-primary);
+.btn-new-quote:hover {
+    background: #d88a20;
+    box-shadow: 0 4px 12px rgba(236, 152, 36, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-new-quote i {
+    font-size: 1.25em;
 }
 
 /* === Tabs === */
@@ -715,7 +720,7 @@
         margin-top: var(--space-2);
     }
 
-    .btn-back-app span {
+    .btn-new-quote span {
         display: none;
     }
 }

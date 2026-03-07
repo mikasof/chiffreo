@@ -371,7 +371,8 @@ class UserRepository
             u.created_at,
             c.name AS company_name, c.siret, c.vat_number, c.phone, c.email_contact,
             c.address_line1, c.address_line2, c.postal_code, c.city,
-            c.logo_path, c.insurance_name, c.insurance_number,
+            c.logo_path, c.insurance_name, c.insurance_number, c.insurance_coverage,
+            c.legal_form, c.capital, c.rcs_number, c.rcs_city,
             c.plan, c.trial_ends_at, c.quotes_this_month, c.profile_completed
         FROM users u
         JOIN companies c ON u.company_id = c.id
@@ -414,6 +415,11 @@ class UserRepository
             'logo_path' => $row['logo_path'],
             'insurance_name' => $row['insurance_name'],
             'insurance_number' => $row['insurance_number'],
+            'insurance_coverage' => $row['insurance_coverage'],
+            'legal_form' => $row['legal_form'],
+            'capital' => $row['capital'],
+            'rcs_number' => $row['rcs_number'],
+            'rcs_city' => $row['rcs_city'],
             // Plan
             'plan' => $row['plan'],
             'trial_ends_at' => $row['trial_ends_at'],
@@ -431,7 +437,9 @@ class UserRepository
         $allowedFields = [
             'name', 'siret', 'vat_number', 'phone', 'email_contact',
             'address_line1', 'address_line2', 'postal_code', 'city',
-            'insurance_name', 'insurance_number', 'logo_path', 'profile_completed'
+            'insurance_name', 'insurance_number', 'insurance_coverage',
+            'legal_form', 'capital', 'rcs_number', 'rcs_city',
+            'logo_path', 'profile_completed'
         ];
 
         $updates = [];
