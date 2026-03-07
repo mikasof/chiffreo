@@ -7,10 +7,11 @@
     'use strict';
 
     // ============================================
-    // Configuration
+    // Configuration (depuis config.js dynamique)
     // ============================================
-    const BASE_PATH = '/chiffreo/public';
-    const API_BASE = BASE_PATH + '/api/auth';
+    const CONFIG = window.CHIFFREO_CONFIG || { BASE_PATH: '', API_BASE: '/api' };
+    const BASE_PATH = CONFIG.BASE_PATH;
+    const API_BASE = CONFIG.API_BASE + '/auth';
     const TOKEN_KEY = 'chiffreo_token';
     const USER_KEY = 'chiffreo_user';
 
@@ -61,6 +62,12 @@
     // Auth State
     // ============================================
     function checkExistingAuth() {
+        // Ne pas rediriger si on est déjà sur onboarding ou app
+        const currentPath = window.location.pathname;
+        if (currentPath.includes('/onboarding') || currentPath.includes('/app')) {
+            return;
+        }
+
         const token = localStorage.getItem(TOKEN_KEY);
         if (token) {
             // Vérifier si le token est valide
@@ -143,8 +150,9 @@
                     document.cookie = `auth_token=${data.data.token}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Strict`;
                 }
 
-                // Rediriger
-                window.location.href = data.data.redirect || BASE_PATH + '/app';
+                // Rediriger (ajouter BASE_PATH au redirect de l'API)
+                const redirect = data.data.redirect ? BASE_PATH + data.data.redirect : BASE_PATH + '/app';
+                window.location.href = redirect;
             } else {
                 showError(loginError, data.error || 'Erreur de connexion');
             }
@@ -213,8 +221,9 @@
                 // Cookie
                 document.cookie = `auth_token=${data.data.token}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Strict`;
 
-                // Rediriger vers l'onboarding
-                window.location.href = data.data.redirect || BASE_PATH + '/onboarding';
+                // Rediriger vers l'onboarding (ajouter BASE_PATH au redirect de l'API)
+                const redirect = data.data.redirect ? BASE_PATH + data.data.redirect : BASE_PATH + '/onboarding';
+                window.location.href = redirect;
             } else {
                 showError(registerError, data.error || 'Erreur lors de l\'inscription');
             }

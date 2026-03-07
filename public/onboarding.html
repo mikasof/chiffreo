@@ -133,9 +133,113 @@
                         </div>
                     </div>
 
+                    <hr class="section-divider">
+
+                    <h2 class="section-title">
+                        <i class="ph ph-currency-eur"></i>
+                        Vos tarifs par défaut
+                    </h2>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hourly-rate">Taux horaire (€/h)</label>
+                            <input
+                                type="number"
+                                id="hourly-rate"
+                                value="45"
+                                min="0"
+                                step="0.5"
+                            >
+                        </div>
+                        <div class="form-group">
+                            <label for="product-margin">Marge fournitures (%)</label>
+                            <input
+                                type="number"
+                                id="product-margin"
+                                value="20"
+                                min="0"
+                                max="100"
+                                step="1"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="supplier-discount">
+                            Remise fournisseur (%)
+                            <span class="label-hint">Carte pro, grossiste...</span>
+                        </label>
+                        <input
+                            type="number"
+                            id="supplier-discount"
+                            value="0"
+                            min="0"
+                            max="60"
+                            step="5"
+                            placeholder="Ex: 30 = -30% sur prix public"
+                        >
+                        <p class="field-help">
+                            <i class="ph ph-info"></i>
+                            0% = prix public, 30-40% = remise carte pro typique
+                        </p>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Facturation du déplacement</label>
+                        <div class="option-row travel-options">
+                            <button class="option-btn small selected" data-value="free" id="travel-free">
+                                <i class="ph ph-gift"></i>
+                                <span>Gratuit</span>
+                            </button>
+                            <button class="option-btn small" data-value="fixed" id="travel-fixed">
+                                <i class="ph ph-tag"></i>
+                                <span>Forfait</span>
+                            </button>
+                            <button class="option-btn small" data-value="per_km" id="travel-km">
+                                <i class="ph ph-path"></i>
+                                <span>Au km</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="travel-details" id="travel-details" style="display: none;">
+                        <div class="form-row">
+                            <div class="form-group" id="travel-fixed-group">
+                                <label for="travel-fixed-amount">Forfait déplacement (€)</label>
+                                <input
+                                    type="number"
+                                    id="travel-fixed-amount"
+                                    value="30"
+                                    min="0"
+                                    step="1"
+                                >
+                            </div>
+                            <div class="form-group" id="travel-km-group" style="display: none;">
+                                <label for="travel-per-km">Prix au km (€)</label>
+                                <input
+                                    type="number"
+                                    id="travel-per-km"
+                                    value="0.50"
+                                    min="0"
+                                    step="0.05"
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label for="travel-free-radius">Rayon gratuit (km)</label>
+                                <input
+                                    type="number"
+                                    id="travel-free-radius"
+                                    value="20"
+                                    min="0"
+                                    step="1"
+                                >
+                            </div>
+                        </div>
+                    </div>
+
                     <p class="info-note">
                         <i class="ph ph-info"></i>
-                        Vous pourrez compléter ces informations plus tard dans les paramètres.
+                        Ces tarifs seront appliqués par défaut. Modifiables à tout moment dans les paramètres.
                     </p>
                 </div>
 
@@ -144,7 +248,7 @@
                         <i class="ph ph-arrow-left"></i>
                         <span>Retour</span>
                     </button>
-                    <button class="btn-primary" id="next-2" disabled>
+                    <button class="btn-primary" id="next-2">
                         <span>Continuer</span>
                         <i class="ph ph-arrow-right"></i>
                     </button>
@@ -286,7 +390,8 @@
         <span>Essai Pro : <strong id="trial-days">14</strong> jours restants</span>
     </div>
 
-    <script src="js/auth.js"></script>
-    <script src="js/onboarding.js"></script>
+    <script src="js/config.js?v=4"></script>
+    <script src="js/auth.js?v=4"></script>
+    <script src="js/onboarding.js?v=4"></script>
 </body>
 </html>

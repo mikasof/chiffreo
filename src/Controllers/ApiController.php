@@ -222,6 +222,17 @@ class ApiController
                 $imageUrls
             );
 
+            // Récupérer les paramètres de tarification de l'utilisateur
+            $userPricing = $this->userRepo->getPricing($userId);
+
+            // Configurer le calculateur avec les paramètres utilisateur
+            $this->calculator->setUserPricing($userPricing);
+
+            // Mode détail si demandé (pour debug/test)
+            if (!empty($input['show_details']) || !empty($input['debug'])) {
+                $this->calculator->setShowDetails(true);
+            }
+
             // Calculer les montants avec la grille de prix
             // Le service TVA analyse automatiquement la description pour déterminer le taux
             $quoteWithTotals = $this->calculator->calculate(
@@ -341,6 +352,18 @@ class ApiController
                 'created_at' => $quote['created_at'],
                 'expires_at' => $quote['expires_at'],
                 'quote' => $quote['quote_data'],
+                'client' => [
+                    'nom' => $quote['client_name'],
+                    'societe' => $quote['client_company'],
+                    'email' => $quote['client_email'],
+                    'telephone' => $quote['client_phone'],
+                    'adresse' => $quote['client_address']
+                ],
+                'chantier' => [
+                    'adresse' => $quote['chantier_adresse'],
+                    'codePostal' => $quote['chantier_code_postal'],
+                    'ville' => $quote['chantier_ville']
+                ],
                 'attachments' => $attachments,
                 'pdf_url' => '/pdf/quote/' . $quote['id']
             ]);
@@ -348,6 +371,104 @@ class ApiController
         } catch (\Exception $e) {
             $this->logError('getQuote', $e->getMessage());
             $this->jsonError('Erreur serveur', 500);
+        }
+    }
+
+    /**
+     * PUT /api/quote/{id}
+     * Met à jour un devis existant
+     */
+    public function updateQuote(int $quoteId): void
+    {
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
+                $this->jsonError('Méthode non autorisée', 405);
+                return;
+            }
+
+            // Authentification requise
+            $user = $this->auth->requireAuth();
+            if (!$user) {
+                return;
+            }
+
+            $userId = $this->auth->getUserId();
+
+            // Récupérer le devis existant
+            $quote = $this->quoteRepo->findById($quoteId);
+
+            if (!$quote) {
+                $this->jsonError('Devis non trouvé', 404);
+                return;
+            }
+
+            // Vérifier que l'utilisateur est propriétaire du devis
+            if ($quote['user_id'] !== $userId) {
+                $this->jsonError('Accès refusé', 403);
+                return;
+            }
+
+            // Récupérer les données de mise à jour
+            $input = json_decode(file_get_contents('php://input'), true);
+
+            if (!$input) {
+                $this->jsonError('Données invalides', 400);
+                return;
+            }
+
+            // Préparer les données à mettre à jour
+            $updateData = [];
+
+            // Données client
+            if (isset($input['client'])) {
+                $clientData = $input['client'];
+                $clientName = trim(($clientData['prenom'] ?? '') . ' ' . ($clientData['nom'] ?? ''));
+                if (empty($clientName)) {
+                    $clientName = $clientData['nom'] ?? null;
+                }
+                $updateData['client_name'] = $clientName;
+                $updateData['client_company'] = $clientData['societe'] ?? null;
+                $updateData['client_email'] = $clientData['email'] ?? null;
+                $updateData['client_phone'] = $clientData['telephone'] ?? null;
+                $updateData['client_address'] = $clientData['adresse'] ?? null;
+            }
+
+            // Données chantier
+            if (isset($input['chantier'])) {
+                $chantierData = $input['chantier'];
+                $updateData['chantier_adresse'] = $chantierData['adresse'] ?? null;
+                $updateData['chantier_code_postal'] = $chantierData['codePostal'] ?? null;
+                $updateData['chantier_ville'] = $chantierData['ville'] ?? null;
+            }
+
+            // Données du devis (lignes, totaux, etc.)
+            if (isset($input['quote'])) {
+                $quoteData = $input['quote'];
+                $updateData['quote_data'] = $quoteData;
+                $updateData['titre'] = $quoteData['chantier']['titre'] ?? null;
+                $updateData['perimetre'] = $quoteData['chantier']['perimetre'] ?? null;
+                $updateData['total_ht'] = $quoteData['totaux']['total_ht'] ?? 0;
+                $updateData['total_tva'] = $quoteData['totaux']['montant_tva'] ?? 0;
+                $updateData['total_ttc'] = $quoteData['totaux']['total_ttc'] ?? 0;
+                $updateData['taux_tva'] = $quoteData['totaux']['taux_tva'] ?? 20;
+            }
+
+            // Mettre à jour
+            $this->quoteRepo->update($quoteId, $updateData);
+
+            $this->logInfo('updateQuote', 'Devis mis à jour', [
+                'quote_id' => $quoteId,
+                'user_id' => $userId
+            ]);
+
+            $this->jsonSuccess([
+                'id' => $quoteId,
+                'message' => 'Devis mis à jour avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logError('updateQuote', $e->getMessage());
+            $this->jsonError('Erreur lors de la mise à jour: ' . $e->getMessage(), 500);
         }
     }
 

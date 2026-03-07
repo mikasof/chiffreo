@@ -4,15 +4,15 @@
     "description": "Générateur de devis électrique intelligent propulsé par MSConseil",
     "start_url": "./",
     "display": "standalone",
-    "background_color": "#f8fafc",
-    "theme_color": "#1e3a5f",
+    "background_color": "#F5F5F0",
+    "theme_color": "#1B4D3E",
     "orientation": "portrait-primary",
     "scope": "./",
     "lang": "fr-FR",
     "categories": ["business", "productivity", "utilities"],
     "icons": [
         {
-            "src": "icons/logo.png",
+            "src": "icons/logo_chiffreo.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any maskable"

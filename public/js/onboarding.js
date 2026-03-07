@@ -7,10 +7,11 @@
     'use strict';
 
     // ============================================
-    // Configuration
+    // Configuration (depuis config.js dynamique)
     // ============================================
-    const BASE_PATH = '/chiffreo/public';
-    const API_BASE = BASE_PATH + '/api';
+    const CONFIG = window.CHIFFREO_CONFIG || { BASE_PATH: '', API_BASE: '/api' };
+    const BASE_PATH = CONFIG.BASE_PATH;
+    const API_BASE = CONFIG.API_BASE;
     const TOKEN_KEY = 'chiffreo_token';
     const USER_KEY = 'chiffreo_user';
 
@@ -136,16 +137,20 @@
 
     async function saveProgress(step) {
         try {
+            // Construire le payload avec toutes les données
+            const payload = {
+                onboarding_step: step,
+                onboarding_completed: step >= 4,
+                ...onboardingData
+            };
+
             await fetch(`${API_BASE}/auth/onboarding`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${getToken()}`
                 },
-                body: JSON.stringify({
-                    step: step,
-                    data: onboardingData
-                })
+                body: JSON.stringify(payload)
             });
         } catch (e) {
             console.error('Error saving progress:', e);
@@ -199,7 +204,7 @@
     }
 
     // ============================================
-    // Step 2: Infos entreprise
+    // Step 2: Infos entreprise + Tarification
     // ============================================
     function initStep2() {
         const nextBtn = document.getElementById('next-2');
@@ -208,14 +213,25 @@
         const siretInput = document.getElementById('siret');
         const phoneInput = document.getElementById('phone');
 
-        // Validation
+        // Pricing fields
+        const hourlyRateInput = document.getElementById('hourly-rate');
+        const productMarginInput = document.getElementById('product-margin');
+        const supplierDiscountInput = document.getElementById('supplier-discount');
+        const travelBtns = document.querySelectorAll('.travel-options .option-btn');
+        const travelDetails = document.getElementById('travel-details');
+        const travelFixedGroup = document.getElementById('travel-fixed-group');
+        const travelKmGroup = document.getElementById('travel-km-group');
+        const travelFixedAmount = document.getElementById('travel-fixed-amount');
+        const travelPerKm = document.getElementById('travel-per-km');
+        const travelFreeRadius = document.getElementById('travel-free-radius');
+
+        // Company validation
         companyInput.addEventListener('input', () => {
             nextBtn.disabled = !companyInput.value.trim();
             onboardingData.company_name = companyInput.value.trim();
         });
 
         siretInput.addEventListener('input', () => {
-            // Format SIRET
             let value = siretInput.value.replace(/\D/g, '');
             if (value.length > 14) value = value.slice(0, 14);
             siretInput.value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{0,5})/, '$1 $2 $3 $4').trim();
@@ -224,6 +240,59 @@
 
         phoneInput.addEventListener('input', () => {
             onboardingData.phone = phoneInput.value;
+        });
+
+        // Pricing fields - set defaults
+        onboardingData.hourly_rate = parseFloat(hourlyRateInput.value) || 45;
+        onboardingData.product_margin = parseFloat(productMarginInput.value) || 20;
+        onboardingData.supplier_discount = parseFloat(supplierDiscountInput.value) || 0;
+        onboardingData.travel_type = 'free';
+        onboardingData.travel_fixed_amount = parseFloat(travelFixedAmount.value) || 30;
+        onboardingData.travel_per_km = parseFloat(travelPerKm.value) || 0.50;
+        onboardingData.travel_free_radius = parseInt(travelFreeRadius.value) || 20;
+
+        hourlyRateInput.addEventListener('input', () => {
+            onboardingData.hourly_rate = parseFloat(hourlyRateInput.value) || 0;
+        });
+
+        productMarginInput.addEventListener('input', () => {
+            onboardingData.product_margin = parseFloat(productMarginInput.value) || 0;
+        });
+
+        supplierDiscountInput.addEventListener('input', () => {
+            onboardingData.supplier_discount = parseFloat(supplierDiscountInput.value) || 0;
+        });
+
+        // Travel type selection
+        travelBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                travelBtns.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+
+                const travelType = btn.dataset.value;
+                onboardingData.travel_type = travelType;
+
+                // Show/hide travel details
+                if (travelType === 'free') {
+                    travelDetails.style.display = 'none';
+                } else {
+                    travelDetails.style.display = 'block';
+                    travelFixedGroup.style.display = travelType === 'fixed' ? 'block' : 'none';
+                    travelKmGroup.style.display = travelType === 'per_km' ? 'block' : 'none';
+                }
+            });
+        });
+
+        travelFixedAmount.addEventListener('input', () => {
+            onboardingData.travel_fixed_amount = parseFloat(travelFixedAmount.value) || 0;
+        });
+
+        travelPerKm.addEventListener('input', () => {
+            onboardingData.travel_per_km = parseFloat(travelPerKm.value) || 0;
+        });
+
+        travelFreeRadius.addEventListener('input', () => {
+            onboardingData.travel_free_radius = parseInt(travelFreeRadius.value) || 0;
         });
 
         nextBtn.addEventListener('click', nextStep);

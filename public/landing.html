@@ -41,6 +41,10 @@
                 <a href="#fonctionnement" class="nav-link">Comment ça marche</a>
                 <a href="#avantages" class="nav-link">Avantages</a>
                 <a href="#tarifs" class="nav-link">Tarifs</a>
+                <a id="auth-link" href="auth" class="nav-link nav-login">
+                    <i class="ph ph-user"></i>
+                    <span>Connexion</span>
+                </a>
                 <a href="auth?tab=register" class="nav-cta">
                     Essai gratuit
                     <i class="ph ph-arrow-right"></i>
@@ -557,6 +561,20 @@
 
         // Initialize
         updatePricing(false);
+    })();
+
+    // Auth link - si connecté, afficher "Mon compte" et rediriger vers settings
+    (function() {
+        const authLink = document.getElementById('auth-link');
+        if (!authLink) return;
+
+        const token = localStorage.getItem('chiffreo_token');
+        if (token) {
+            // Utilisateur connecté
+            authLink.innerHTML = '<i class="ph ph-user-circle"></i><span>Mon compte</span>';
+            authLink.href = 'settings';
+            authLink.classList.add('logged-in');
+        }
     })();
     </script>
 </body>

@@ -13,11 +13,30 @@ class QuoteCalculator
     private array $priceGrid;
     private string $defaultTier = 'mid'; // Gamme par défaut: milieu
     private TvaService $tvaService;
+    private array $userPricing = [];
+    private bool $showDetails = false;
 
     public function __construct()
     {
         $this->priceGrid = require __DIR__ . '/../../config/prices.php';
         $this->tvaService = new TvaService();
+    }
+
+    /**
+     * Définit les paramètres de tarification utilisateur
+     * @param array $pricing Paramètres (hourly_rate, product_margin, supplier_discount, etc.)
+     */
+    public function setUserPricing(array $pricing): void
+    {
+        $this->userPricing = $pricing;
+    }
+
+    /**
+     * Active le mode détail (affiche tous les calculs)
+     */
+    public function setShowDetails(bool $show): void
+    {
+        $this->showDetails = $show;
     }
 
     /**
@@ -62,33 +81,69 @@ class QuoteCalculator
         $totalMainOeuvre = 0;
         $totalForfait = 0;
 
+        // Récupérer les paramètres utilisateur
+        $supplierDiscount = (float) ($this->userPricing['supplier_discount'] ?? 0); // % remise fournisseur
+        $productMargin = (float) ($this->userPricing['product_margin'] ?? 20); // % marge sur matériel
+        $userHourlyRate = (float) ($this->userPricing['hourly_rate'] ?? 0); // Taux horaire custom
+
         foreach ($quoteData['lignes'] as $ligne) {
             $prixRef = $ligne['prix_ref_code'];
             $quantite = (float) $ligne['quantite'];
+            $categorie = $ligne['categorie'];
+
+            // Détails de calcul pour le mode debug
+            $details = [];
 
             // Récupérer le prix unitaire selon la gamme
             if ($prixRef === 'CUSTOM') {
                 // Prix suggéré par l'IA pour articles hors catalogue
-                $prixUnitaireHT = (float) ($ligne['prix_unitaire_ht_suggere'] ?? 0);
+                $prixPublicHT = (float) ($ligne['prix_unitaire_ht_suggere'] ?? 0);
                 $label = $ligne['designation'];
                 $unite = $ligne['unite'];
+                $details['source'] = 'custom';
             } elseif (isset($this->priceGrid[$prixRef])) {
                 $gridItem = $this->priceGrid[$prixRef];
-                $prixUnitaireHT = $this->getPriceByTier($gridItem);
+                $prixPublicHT = $this->getPriceByTier($gridItem);
                 $label = $gridItem['label'];
                 $unite = $gridItem['unit'];
+                $details['source'] = 'grille';
+                $details['tier'] = $this->defaultTier;
             } else {
                 // Code inconnu : utiliser le prix suggéré ou 0
-                $prixUnitaireHT = (float) ($ligne['prix_unitaire_ht_suggere'] ?? 0);
+                $prixPublicHT = (float) ($ligne['prix_unitaire_ht_suggere'] ?? 0);
                 $label = $ligne['designation'];
                 $unite = $ligne['unite'];
+                $details['source'] = 'suggéré';
             }
 
+            $details['prix_public_ht'] = $prixPublicHT;
+
+            // Appliquer les modifications selon la catégorie
+            if ($categorie === 'materiel') {
+                // 1. Appliquer la remise fournisseur (prix d'achat)
+                $prixAchatHT = $prixPublicHT * (1 - $supplierDiscount / 100);
+                $details['remise_fournisseur'] = $supplierDiscount . '%';
+                $details['prix_achat_ht'] = round($prixAchatHT, 2);
+
+                // 2. Appliquer la marge utilisateur
+                $prixUnitaireHT = $prixAchatHT * (1 + $productMargin / 100);
+                $details['marge_appliquee'] = $productMargin . '%';
+                $details['prix_vente_ht'] = round($prixUnitaireHT, 2);
+            } elseif ($categorie === 'main_oeuvre' && $userHourlyRate > 0 && $prixRef === 'MO_H') {
+                // Utiliser le taux horaire personnalisé
+                $prixUnitaireHT = $userHourlyRate;
+                $details['taux_horaire_custom'] = true;
+            } else {
+                // Forfaits et autres : pas de modification
+                $prixUnitaireHT = $prixPublicHT;
+            }
+
+            $prixUnitaireHT = round($prixUnitaireHT, 2);
             $totalLigneHT = round($prixUnitaireHT * $quantite, 2);
             $totalHT += $totalLigneHT;
 
             // Répartition par catégorie
-            switch ($ligne['categorie']) {
+            switch ($categorie) {
                 case 'materiel':
                     $totalMateriel += $totalLigneHT;
                     break;
@@ -100,10 +155,10 @@ class QuoteCalculator
                     break;
             }
 
-            $lignesCalculees[] = [
+            $ligneCalculee = [
                 'designation' => $ligne['designation'],
                 'designation_catalogue' => $label,
-                'categorie' => $ligne['categorie'],
+                'categorie' => $categorie,
                 'unite' => $unite,
                 'quantite' => $quantite,
                 'prix_unitaire_ht' => $prixUnitaireHT,
@@ -111,6 +166,13 @@ class QuoteCalculator
                 'prix_ref_code' => $prixRef,
                 'commentaire' => $ligne['commentaire']
             ];
+
+            // Ajouter les détails si mode debug actif
+            if ($this->showDetails) {
+                $ligneCalculee['_details'] = $details;
+            }
+
+            $lignesCalculees[] = $ligneCalculee;
         }
 
         // Détermination automatique de la TVA si description fournie
@@ -138,6 +200,16 @@ class QuoteCalculator
             'montant_tva' => $montantTVA,
             'total_ttc' => $totalTTC
         ];
+
+        // Ajouter les paramètres de calcul si mode debug
+        if ($this->showDetails) {
+            $quoteData['_parametres_calcul'] = [
+                'tier' => $this->defaultTier,
+                'remise_fournisseur' => $supplierDiscount . '%',
+                'marge_materiel' => $productMargin . '%',
+                'taux_horaire' => $userHourlyRate > 0 ? $userHourlyRate . ' €/h' : 'grille standard'
+            ];
+        }
 
         // Ajouter les informations TVA si calculées automatiquement
         if ($tvaInfo !== null) {

@@ -3,7 +3,7 @@
  * Cache basique pour fonctionnement offline
  */
 
-const CACHE_NAME = 'chiffreo-v2';
+const CACHE_NAME = 'chiffreo-v3';
 const BASE_PATH = '/chiffreo/public';
 
 const STATIC_ASSETS = [

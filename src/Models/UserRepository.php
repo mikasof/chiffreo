@@ -42,10 +42,10 @@ class UserRepository
             'password_hash' => $data['password_hash'],
             'role' => $data['role'] ?? 'owner',
             'onboarding_step' => $data['onboarding_step'] ?? 0,
-            'onboarding_completed' => $data['onboarding_completed'] ?? false,
-            'pwa_installed' => $data['pwa_installed'] ?? false,
-            'notifications_enabled' => $data['notifications_enabled'] ?? false,
-            'first_quote_done' => $data['first_quote_done'] ?? false
+            'onboarding_completed' => ($data['onboarding_completed'] ?? false) ? 1 : 0,
+            'pwa_installed' => ($data['pwa_installed'] ?? false) ? 1 : 0,
+            'notifications_enabled' => ($data['notifications_enabled'] ?? false) ? 1 : 0,
+            'first_quote_done' => ($data['first_quote_done'] ?? false) ? 1 : 0
         ]);
 
         return (int) $this->db->lastInsertId();
@@ -225,6 +225,70 @@ class UserRepository
     }
 
     /**
+     * Met à jour les paramètres de tarification utilisateur
+     */
+    public function updatePricing(int $userId, array $data): bool
+    {
+        $allowedFields = [
+            'hourly_rate', 'product_margin', 'supplier_discount', 'default_tier',
+            'travel_type', 'travel_fixed_amount', 'travel_per_km', 'travel_free_radius'
+        ];
+        $updates = [];
+        $params = ['id' => $userId];
+
+        foreach ($data as $key => $value) {
+            if (in_array($key, $allowedFields)) {
+                $updates[] = "{$key} = :{$key}";
+                $params[$key] = $value;
+            }
+        }
+
+        if (empty($updates)) {
+            return false;
+        }
+
+        $sql = "UPDATE users SET " . implode(', ', $updates) . " WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
+    }
+
+    /**
+     * Récupère les paramètres de tarification d'un utilisateur
+     */
+    public function getPricing(int $userId): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT hourly_rate, product_margin, supplier_discount, travel_type,
+                    travel_fixed_amount, travel_per_km, travel_free_radius
+             FROM users WHERE id = :id"
+        );
+        $stmt->execute(['id' => $userId]);
+        $row = $stmt->fetch();
+
+        if (!$row) {
+            return [
+                'hourly_rate' => 45.00,
+                'product_margin' => 20.00,
+                'supplier_discount' => 0.00,
+                'travel_type' => 'free',
+                'travel_fixed_amount' => 30.00,
+                'travel_per_km' => 0.50,
+                'travel_free_radius' => 20
+            ];
+        }
+
+        return [
+            'hourly_rate' => (float) $row['hourly_rate'],
+            'product_margin' => (float) $row['product_margin'],
+            'supplier_discount' => (float) ($row['supplier_discount'] ?? 0),
+            'travel_type' => $row['travel_type'],
+            'travel_fixed_amount' => (float) $row['travel_fixed_amount'],
+            'travel_per_km' => (float) $row['travel_per_km'],
+            'travel_free_radius' => (int) $row['travel_free_radius']
+        ];
+    }
+
+    /**
      * Formate les données brutes en structure user + company imbriquée
      */
     private function formatUserWithCompany(array $row): array
@@ -291,5 +355,123 @@ class UserRepository
         );
         $stmt->execute(['company_id' => $companyId]);
         return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Récupère le profil complet d'un utilisateur (avec pricing et company)
+     */
+    public function getFullProfile(int $userId): ?array
+    {
+        $sql = "SELECT
+            u.id, u.company_id, u.first_name, u.last_name, u.email,
+            u.role, u.onboarding_step, u.onboarding_completed, u.pwa_installed,
+            u.notifications_enabled, u.first_quote_done, u.is_active,
+            u.hourly_rate, u.product_margin, u.supplier_discount, u.default_tier,
+            u.travel_type, u.travel_fixed_amount, u.travel_per_km, u.travel_free_radius,
+            u.created_at,
+            c.name AS company_name, c.siret, c.vat_number, c.phone, c.email_contact,
+            c.address_line1, c.address_line2, c.postal_code, c.city,
+            c.logo_path, c.insurance_name, c.insurance_number,
+            c.plan, c.trial_ends_at, c.quotes_this_month, c.profile_completed
+        FROM users u
+        JOIN companies c ON u.company_id = c.id
+        WHERE u.id = :id";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id' => $userId]);
+        $row = $stmt->fetch();
+
+        if (!$row) {
+            return null;
+        }
+
+        return [
+            'id' => (int) $row['id'],
+            'company_id' => (int) $row['company_id'],
+            'first_name' => $row['first_name'],
+            'last_name' => $row['last_name'],
+            'email' => $row['email'],
+            'role' => $row['role'],
+            'onboarding_completed' => (bool) $row['onboarding_completed'],
+            // Pricing
+            'hourly_rate' => $row['hourly_rate'] ? (float) $row['hourly_rate'] : null,
+            'product_margin' => (float) ($row['product_margin'] ?? 20),
+            'supplier_discount' => (float) ($row['supplier_discount'] ?? 0),
+            'default_tier' => $row['default_tier'] ?? 'mid',
+            'travel_type' => $row['travel_type'] ?? 'none',
+            'travel_fixed_amount' => (float) ($row['travel_fixed_amount'] ?? 30),
+            'travel_per_km' => (float) ($row['travel_per_km'] ?? 0.5),
+            'travel_free_radius' => (int) ($row['travel_free_radius'] ?? 10),
+            // Company
+            'company_name' => $row['company_name'],
+            'siret' => $row['siret'],
+            'vat_number' => $row['vat_number'],
+            'phone' => $row['phone'],
+            'address_line1' => $row['address_line1'],
+            'address_line2' => $row['address_line2'],
+            'postal_code' => $row['postal_code'],
+            'city' => $row['city'],
+            'logo_path' => $row['logo_path'],
+            'insurance_name' => $row['insurance_name'],
+            'insurance_number' => $row['insurance_number'],
+            // Plan
+            'plan' => $row['plan'],
+            'trial_ends_at' => $row['trial_ends_at'],
+            'quotes_this_month' => (int) $row['quotes_this_month'],
+            'profile_completed' => (bool) $row['profile_completed'],
+            'created_at' => $row['created_at']
+        ];
+    }
+
+    /**
+     * Met à jour les informations de l'entreprise
+     */
+    public function updateCompany(int $companyId, array $data): bool
+    {
+        $allowedFields = [
+            'name', 'siret', 'vat_number', 'phone', 'email_contact',
+            'address_line1', 'address_line2', 'postal_code', 'city',
+            'insurance_name', 'insurance_number', 'logo_path', 'profile_completed'
+        ];
+
+        $updates = [];
+        $params = ['id' => $companyId];
+
+        foreach ($data as $key => $value) {
+            if (in_array($key, $allowedFields)) {
+                $updates[] = "{$key} = :{$key}";
+                $params[$key] = $value;
+            }
+        }
+
+        if (empty($updates)) {
+            return false;
+        }
+
+        $sql = "UPDATE companies SET " . implode(', ', $updates) . " WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
+    }
+
+    /**
+     * Met à jour le logo de l'entreprise
+     */
+    public function updateCompanyLogo(int $companyId, ?string $logoPath): bool
+    {
+        $stmt = $this->db->prepare(
+            "UPDATE companies SET logo_path = :logo_path WHERE id = :id"
+        );
+        return $stmt->execute(['id' => $companyId, 'logo_path' => $logoPath]);
+    }
+
+    /**
+     * Récupère le company_id d'un utilisateur
+     */
+    public function getCompanyId(int $userId): ?int
+    {
+        $stmt = $this->db->prepare("SELECT company_id FROM users WHERE id = :id");
+        $stmt->execute(['id' => $userId]);
+        $result = $stmt->fetchColumn();
+        return $result ? (int) $result : null;
     }
 }

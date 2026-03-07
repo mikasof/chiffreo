@@ -1,10 +1,12 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # RewriteBase: changer selon l'environnement
-    # Local MAMP: /chiffreo/public/
-    # Production: /
-    RewriteBase /chiffreo/public/
+    # Production: à la racine du domaine
+    RewriteBase /
+
+    # Forcer HTTPS
+    RewriteCond %{HTTPS} off
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
     # Forcer la racine vers index.php (landing page)
     RewriteRule ^$ index.php [L]
@@ -30,6 +32,7 @@
     Header set X-Frame-Options "SAMEORIGIN"
     Header set X-XSS-Protection "1; mode=block"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.openai.com"
 </IfModule>
 
 # Compression
@@ -47,3 +50,9 @@
     ExpiresByType image/svg+xml "access plus 1 month"
     ExpiresByType font/woff2 "access plus 1 year"
 </IfModule>
+
+# Interdire l'accès aux fichiers sensibles
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

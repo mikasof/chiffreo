@@ -267,4 +267,91 @@ class QuoteRepository
         $stmt->execute(['quote_id' => $quoteId]);
         return $stmt->fetchAll();
     }
+
+    /**
+     * Liste les devis d'un utilisateur
+     */
+    public function findByUserId(int $userId, int $limit = 50): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT id, reference, titre, client_name, total_ttc, status, created_at
+             FROM quotes
+             WHERE user_id = :user_id
+             ORDER BY created_at DESC
+             LIMIT :limit"
+        );
+        $stmt->bindValue('user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Supprime un devis et ses lignes associées
+     */
+    public function delete(int $id): bool
+    {
+        // Supprimer les lignes du devis
+        $stmt = $this->db->prepare("DELETE FROM quote_items WHERE quote_id = :id");
+        $stmt->execute(['id' => $id]);
+
+        // Supprimer les attachements
+        $stmt = $this->db->prepare("DELETE FROM attachments WHERE quote_id = :id");
+        $stmt->execute(['id' => $id]);
+
+        // Supprimer le devis
+        $stmt = $this->db->prepare("DELETE FROM quotes WHERE id = :id");
+        return $stmt->execute(['id' => $id]);
+    }
+
+    /**
+     * Met à jour un devis existant
+     */
+    public function update(int $id, array $data): bool
+    {
+        $fields = [];
+        $params = ['id' => $id];
+
+        // Champs possibles à mettre à jour
+        $allowedFields = [
+            'client_name', 'client_company', 'client_email', 'client_phone', 'client_address',
+            'chantier_adresse', 'chantier_code_postal', 'chantier_ville',
+            'titre', 'perimetre',
+            'total_ht', 'total_tva', 'total_ttc', 'taux_tva',
+            'status'
+        ];
+
+        foreach ($allowedFields as $field) {
+            if (array_key_exists($field, $data)) {
+                $fields[] = "{$field} = :{$field}";
+                $params[$field] = $data[$field];
+            }
+        }
+
+        // quote_data nécessite un traitement JSON
+        if (array_key_exists('quote_data', $data)) {
+            $fields[] = "quote_data = :quote_data";
+            $params['quote_data'] = json_encode($data['quote_data'], JSON_UNESCAPED_UNICODE);
+        }
+
+        if (empty($fields)) {
+            return true; // Rien à mettre à jour
+        }
+
+        $sql = "UPDATE quotes SET " . implode(', ', $fields) . " WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $result = $stmt->execute($params);
+
+        // Mettre à jour les lignes du devis si quote_data contient des lignes
+        if (isset($data['quote_data']['lignes'])) {
+            // Supprimer les anciennes lignes
+            $stmt = $this->db->prepare("DELETE FROM quote_items WHERE quote_id = :id");
+            $stmt->execute(['id' => $id]);
+
+            // Insérer les nouvelles lignes
+            $this->insertQuoteItems($id, $data['quote_data']['lignes']);
+        }
+
+        return $result;
+    }
 }

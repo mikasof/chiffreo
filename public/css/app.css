@@ -1,34 +1,35 @@
 /**
  * Chiffreo - Styles CSS
- * Design System: Moderne, professionnel, électricien
+ * Design System: Vert sapin, moderne, professionnel
  */
 
 /* === Variables === */
 :root {
-    /* Couleurs principales */
-    --color-primary: #1e3a5f;
-    --color-primary-light: #2d4a6f;
-    --color-primary-dark: #0f2940;
+    /* Couleurs principales - harmonisées avec landing */
+    --color-primary: #1B4D3E;
+    --color-primary-light: #245E4A;
+    --color-primary-dark: #0F3329;
 
-    --color-accent: #f59e0b;
-    --color-accent-light: #fbbf24;
+    --color-accent: #34D399;
+    --color-accent-light: #6EE7B7;
 
     /* Couleurs neutres */
-    --color-bg: #f8fafc;
-    --color-surface: #ffffff;
-    --color-border: #e2e8f0;
+    --color-bg: #F5F5F0;
+    --color-bg-alt: #ECEEE8;
+    --color-surface: #FFFFFF;
+    --color-border: #D4D6CE;
 
-    --color-text: #1e293b;
-    --color-text-secondary: #64748b;
-    --color-text-muted: #94a3b8;
+    --color-text: #1A1A1A;
+    --color-text-secondary: #52524E;
+    --color-text-muted: #8A8A85;
 
     /* Couleurs sémantiques */
     --color-success: #10b981;
     --color-warning: #f59e0b;
     --color-error: #ef4444;
 
-    /* Typographie */
-    --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    /* Typographie - harmonisée avec landing */
+    --font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-size-xs: 0.75rem;
     --font-size-sm: 0.875rem;
     --font-size-base: 1rem;
@@ -125,6 +126,12 @@ body {
     gap: var(--space-2);
     font-size: var(--font-size-xl);
     font-weight: 700;
+    color: white;
+    text-decoration: none;
+}
+
+.logo:hover {
+    color: white;
 }
 
 .logo i {
@@ -1103,7 +1110,7 @@ textarea::placeholder {
     gap: var(--space-3);
 }
 
-.btn-pdf, .btn-new {
+.btn-pdf, .btn-new, .btn-save {
     display: flex;
     align-items: center;
     gap: var(--space-2);
@@ -1114,6 +1121,21 @@ textarea::placeholder {
     text-decoration: none;
     cursor: pointer;
     transition: all var(--transition-fast);
+}
+
+.btn-save {
+    background: var(--color-primary);
+    border: none;
+    color: white;
+}
+
+.btn-save:hover {
+    background: var(--color-primary-dark);
+}
+
+.btn-save:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .btn-pdf {
@@ -1775,7 +1797,8 @@ textarea::placeholder {
     }
 
     .result-actions .btn-pdf,
-    .result-actions .btn-new {
+    .result-actions .btn-new,
+    .result-actions .btn-save {
         flex: 1;
         justify-content: center;
     }

@@ -673,6 +673,89 @@ body {
 }
 
 /* Responsive */
+/* Section Divider & Titles */
+.section-divider {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: var(--space-xl) 0;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: var(--space-lg);
+    color: var(--color-text);
+}
+
+.section-title i {
+    font-size: 1.5rem;
+    color: var(--color-primary);
+}
+
+/* Travel Options */
+.travel-options {
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.travel-options .option-btn.small {
+    flex-direction: column;
+    padding: var(--space-md);
+    min-width: 100px;
+}
+
+.travel-options .option-btn.small i {
+    display: block;
+    font-size: 1.25rem;
+    color: var(--color-primary);
+    margin-bottom: var(--space-xs);
+}
+
+.travel-options .option-btn.small.selected i {
+    color: var(--color-accent-dark);
+}
+
+.travel-details {
+    margin-top: var(--space-md);
+    padding: var(--space-lg);
+    background: var(--color-bg-alt);
+    border-radius: var(--radius-md);
+}
+
+/* Number inputs */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    opacity: 1;
+}
+
+/* Label hints & field help */
+.label-hint {
+    font-weight: 400;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.field-help {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-top: var(--space-xs);
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+}
+
+.field-help i {
+    color: var(--color-primary);
+}
+
 @media (max-width: 600px) {
     .onboarding-header {
         padding: var(--space-md);

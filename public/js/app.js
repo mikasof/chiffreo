@@ -3,8 +3,10 @@
  * PWA pour la génération de devis électriques
  */
 
-// === Base Path pour MAMP ===
-const BASE_PATH = '/chiffreo/public';
+// === Configuration (depuis config.js dynamique) ===
+const CONFIG = window.CHIFFREO_CONFIG || { BASE_PATH: '', API_BASE: '/api' };
+const BASE_PATH = CONFIG.BASE_PATH;
+const API_BASE = CONFIG.API_BASE;
 
 // === Constantes Auth ===
 const TOKEN_KEY = 'chiffreo_token';
@@ -22,6 +24,9 @@ const state = {
     appendMode: false, // Mode compléter transcription
     images: [],
     currentQuote: null,
+    editMode: false, // Mode édition d'un devis existant
+    editQuoteId: null, // ID du devis en cours d'édition
+    hasChanges: false, // Flag pour savoir si des modifications ont été faites
     // Authentification
     isAuthenticated: false,
     user: null,
@@ -70,7 +75,7 @@ const Auth = {
         }
 
         try {
-            const response = await fetch('/api/auth/me', {
+            const response = await fetch(`${API_BASE}/auth/me`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
@@ -96,7 +101,7 @@ const Auth = {
         const token = this.getToken();
         if (token) {
             try {
-                await fetch('/api/auth/logout', {
+                await fetch(`${API_BASE}/auth/logout`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -253,6 +258,7 @@ const elements = {
     quoteTitle: document.getElementById('quoteTitle'),
     quoteRef: document.getElementById('quoteRef'),
     pdfLink: document.getElementById('pdfLink'),
+    saveQuoteBtn: document.getElementById('saveQuoteBtn'),
     chantierPerimetre: document.getElementById('chantierPerimetre'),
     chantierHypotheses: document.getElementById('chantierHypotheses'),
     questionsCard: document.getElementById('questionsCard'),
@@ -313,6 +319,17 @@ async function init() {
     setupAuthUI();
     setupPWA();
     registerServiceWorker();
+
+    // Vérifier si on est en mode édition
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('edit');
+
+    console.log('[Chiffreo] Mode édition détecté:', editId);
+
+    if (editId) {
+        console.log('[Chiffreo] Chargement du devis:', editId);
+        await loadQuoteForEdit(editId);
+    }
 }
 
 function setupAuthUI() {
@@ -347,6 +364,16 @@ function setupAuthUI() {
             Auth.logout();
         });
     }
+
+    // Liens vers paramètres (avec BASE_PATH)
+    const settingsLink = document.getElementById('settings-link');
+    const quotesLink = document.getElementById('quotes-link');
+    if (settingsLink) {
+        settingsLink.href = BASE_PATH + '/settings';
+    }
+    if (quotesLink) {
+        quotesLink.href = BASE_PATH + '/settings#quotes';
+    }
 }
 
 function setupEventListeners() {
@@ -380,6 +407,11 @@ function setupEventListeners() {
 
     // Nouveau devis
     elements.newQuoteBtn.addEventListener('click', resetForm);
+
+    // Sauvegarde du devis (mode édition)
+    if (elements.saveQuoteBtn) {
+        elements.saveQuoteBtn.addEventListener('click', saveQuote);
+    }
 
     // Édition lignes
     elements.addLineBtn.addEventListener('click', () => openEditModal(-1));
@@ -885,13 +917,189 @@ function resetForm() {
     elements.charCount.textContent = '0';
     state.transcription = '';
     state.images = [];
+    state.editMode = false;
+    state.editQuoteId = null;
+    state.hasChanges = false;
 
     elements.transcriptionResult.style.display = 'none';
     elements.imagePreview.innerHTML = '';
     elements.addImageBtn.style.display = 'flex';
     elements.resultSection.style.display = 'none';
+    if (elements.saveQuoteBtn) {
+        elements.saveQuoteBtn.style.display = 'none';
+    }
+
+    // Nettoyer l'URL
+    const url = new URL(window.location);
+    url.searchParams.delete('edit');
+    window.history.replaceState({}, '', url);
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// === Mode Édition ===
+async function loadQuoteForEdit(quoteId) {
+    try {
+        console.log('[Chiffreo] loadQuoteForEdit appelé avec ID:', quoteId);
+        showLoading('Chargement du devis...');
+
+        const url = `${BASE_PATH}/api/quote/${quoteId}`;
+        console.log('[Chiffreo] Fetch URL:', url);
+
+        const response = await fetch(url, {
+            headers: Auth.getAuthHeader()
+        });
+
+        console.log('[Chiffreo] Réponse status:', response.status);
+        const result = await response.json();
+        console.log('[Chiffreo] Réponse data:', result);
+
+        if (!result.success) {
+            throw new Error(result.error || 'Devis non trouvé');
+        }
+
+        const data = result.data;
+
+        // Activer le mode édition
+        state.editMode = true;
+        state.editQuoteId = parseInt(quoteId);
+        state.hasChanges = false;
+
+        // Charger les données client
+        if (data.client) {
+            // Parser le nom complet en prénom/nom si possible
+            const fullName = data.client.nom || '';
+            const nameParts = fullName.split(' ');
+
+            state.client = {
+                civilite: 'M.',
+                nom: nameParts.length > 1 ? nameParts.slice(1).join(' ') : fullName,
+                prenom: nameParts.length > 1 ? nameParts[0] : '',
+                societe: data.client.societe || '',
+                email: data.client.email || '',
+                telephone: data.client.telephone || '',
+                adresse: data.client.adresse || '',
+                codePostal: '',
+                ville: ''
+            };
+
+            // Peupler les champs client
+            elements.clientNom.value = state.client.nom;
+            elements.clientPrenom.value = state.client.prenom;
+            elements.clientSociete.value = state.client.societe;
+            elements.clientEmail.value = state.client.email;
+            elements.clientTelephone.value = state.client.telephone;
+            elements.clientAdresse.value = state.client.adresse;
+        }
+
+        // Charger les données chantier
+        if (data.chantier) {
+            state.chantier = {
+                adresse: data.chantier.adresse || '',
+                codePostal: data.chantier.codePostal || '',
+                ville: data.chantier.ville || ''
+            };
+
+            if (data.chantier.adresse || data.chantier.ville) {
+                elements.chantierDifferent.checked = true;
+                elements.chantierFields.style.display = 'block';
+                elements.chantierAdresse.value = state.chantier.adresse;
+                elements.chantierCodePostal.value = state.chantier.codePostal;
+                elements.chantierVille.value = state.chantier.ville;
+            }
+        }
+
+        // Charger le devis
+        state.currentQuote = {
+            id: data.id,
+            reference: data.reference,
+            quote: data.quote,
+            pdf_url: data.pdf_url
+        };
+
+        // Mettre à jour le résumé client
+        updateClientSummary();
+
+        // Afficher le résultat
+        renderQuoteResult(state.currentQuote);
+
+        // Masquer le formulaire, afficher la section résultat
+        hideLoading();
+        elements.form.style.display = 'none';
+        elements.resultSection.style.display = 'block';
+        if (elements.saveQuoteBtn) {
+            elements.saveQuoteBtn.style.display = 'flex';
+        }
+        console.log('[Chiffreo] Mode édition activé, formulaire masqué, résultat affiché');
+
+        // Mettre à jour le titre
+        const sectionHeader = document.querySelector('.section-header h1');
+        if (sectionHeader) {
+            sectionHeader.textContent = 'Modifier le devis';
+        }
+
+        showToast('Devis chargé pour modification', 'success');
+
+    } catch (error) {
+        console.error('Erreur chargement devis:', error);
+        hideLoading();
+        showToast(error.message, 'error');
+
+        // Rediriger vers les paramètres si le devis n'existe pas
+        setTimeout(() => {
+            window.location.href = BASE_PATH + '/settings#quotes';
+        }, 2000);
+    }
+}
+
+async function saveQuote() {
+    if (!state.editMode || !state.editQuoteId) {
+        showToast('Aucun devis à sauvegarder', 'error');
+        return;
+    }
+
+    try {
+        elements.saveQuoteBtn.disabled = true;
+        elements.saveQuoteBtn.innerHTML = '<span class="loading-spinner" style="width:16px;height:16px;border-width:2px;"></span> Enregistrement...';
+
+        const payload = {
+            client: state.client,
+            chantier: state.chantier,
+            quote: state.currentQuote.quote
+        };
+
+        const response = await fetch(`${BASE_PATH}/api/quote/${state.editQuoteId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                ...Auth.getAuthHeader()
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error || 'Erreur lors de la sauvegarde');
+        }
+
+        state.hasChanges = false;
+        showToast('Devis enregistré avec succès', 'success');
+
+    } catch (error) {
+        console.error('Erreur sauvegarde:', error);
+        showToast(error.message, 'error');
+    } finally {
+        elements.saveQuoteBtn.disabled = false;
+        elements.saveQuoteBtn.innerHTML = '<i class="ph ph-floppy-disk"></i> Enregistrer';
+    }
+}
+
+// Marquer le devis comme modifié après une action d'édition
+function markAsChanged() {
+    if (state.editMode) {
+        state.hasChanges = true;
+    }
 }
 
 // === Utilitaires ===
@@ -1165,6 +1373,9 @@ function saveLine() {
         showToast('Ligne modifiée', 'success');
     }
 
+    // Marquer comme modifié en mode édition
+    markAsChanged();
+
     // Recalculer et rafraîchir
     recalculateTotals();
     renderQuoteLines();
@@ -1177,6 +1388,10 @@ function deleteLine(index) {
     }
 
     state.currentQuote.quote.lignes.splice(index, 1);
+
+    // Marquer comme modifié en mode édition
+    markAsChanged();
+
     recalculateTotals();
     renderQuoteLines();
     showToast('Ligne supprimée', 'success');

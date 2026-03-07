@@ -36,12 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri = rawurldecode($uri);
 
-// Retirer le préfixe /chiffreo/public si présent
-$basePath = '/chiffreo/public';
-if (str_starts_with($uri, $basePath)) {
+// Base path depuis l'environnement (vide en prod, '/chiffreo/public' en local)
+$basePath = $_ENV['APP_BASE_PATH'] ?? '';
+if ($basePath && str_starts_with($uri, $basePath)) {
     $uri = substr($uri, strlen($basePath));
 }
-// Aussi gérer /chiffreo/public/ -> /
+// Gérer le cas où $uri est vide après suppression du préfixe
 if ($uri === '' || $uri === false) {
     $uri = '/';
 }
@@ -117,6 +117,207 @@ try {
     if ($uri === '/api/auth/quota' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         $controller = new \App\Controllers\AuthController();
         $controller->getQuota();
+        exit;
+    }
+
+    // === User Profile Routes ===
+
+    // GET /api/user/profile
+    if ($uri === '/api/user/profile' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        $auth = new \App\Middleware\AuthMiddleware();
+        $user = $auth->requireAuth();
+        if (!$user) exit;
+
+        $userRepo = new \App\Models\UserRepository();
+        $profile = $userRepo->getFullProfile($auth->getUserId());
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'data' => ['user' => $profile]]);
+        exit;
+    }
+
+    // PUT /api/user/company
+    if ($uri === '/api/user/company' && $_SERVER['REQUEST_METHOD'] === 'PUT') {
+        $auth = new \App\Middleware\AuthMiddleware();
+        $user = $auth->requireAuth();
+        if (!$user) exit;
+
+        $userRepo = new \App\Models\UserRepository();
+        $companyId = $userRepo->getCompanyId($auth->getUserId());
+
+        if (!$companyId) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Entreprise non trouvée']);
+            exit;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        // Map front-end field names to database field names
+        $data = [
+            'name' => $input['company_name'] ?? null,
+            'siret' => $input['siret'] ?? null,
+            'vat_number' => $input['vat_number'] ?? null,
+            'phone' => $input['phone'] ?? null,
+            'address_line1' => $input['address_line1'] ?? null,
+            'address_line2' => $input['address_line2'] ?? null,
+            'postal_code' => $input['postal_code'] ?? null,
+            'city' => $input['city'] ?? null,
+            'insurance_name' => $input['insurance_name'] ?? null,
+            'insurance_number' => $input['insurance_number'] ?? null
+        ];
+
+        // Check if profile is complete
+        if ($data['name'] && $data['siret'] && $data['address_line1'] && $data['postal_code'] && $data['city'] && $data['phone']) {
+            $data['profile_completed'] = 1;
+        }
+
+        $userRepo->updateCompany($companyId, $data);
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
+    // PUT /api/user/pricing
+    if ($uri === '/api/user/pricing' && $_SERVER['REQUEST_METHOD'] === 'PUT') {
+        $auth = new \App\Middleware\AuthMiddleware();
+        $user = $auth->requireAuth();
+        if (!$user) exit;
+
+        $userRepo = new \App\Models\UserRepository();
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        $userRepo->updatePricing($auth->getUserId(), $input);
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
+    // POST /api/user/logo
+    if ($uri === '/api/user/logo' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $auth = new \App\Middleware\AuthMiddleware();
+        $user = $auth->requireAuth();
+        if (!$user) exit;
+
+        if (!isset($_FILES['logo']) || $_FILES['logo']['error'] !== UPLOAD_ERR_OK) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Fichier manquant ou erreur upload']);
+            exit;
+        }
+
+        $file = $_FILES['logo'];
+
+        // Validate
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        if (!in_array($file['type'], $allowedTypes)) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Type de fichier non autorisé']);
+            exit;
+        }
+
+        if ($file['size'] > 500 * 1024) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Fichier trop volumineux (max 500 KB)']);
+            exit;
+        }
+
+        $userRepo = new \App\Models\UserRepository();
+        $companyId = $userRepo->getCompanyId($auth->getUserId());
+
+        // Create uploads directory if needed
+        $uploadDir = __DIR__ . '/uploads/logos';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Generate unique filename
+        $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = 'logo_' . $companyId . '_' . time() . '.' . $ext;
+        $filepath = $uploadDir . '/' . $filename;
+
+        if (move_uploaded_file($file['tmp_name'], $filepath)) {
+            $logoPath = 'uploads/logos/' . $filename;
+            $userRepo->updateCompanyLogo($companyId, $logoPath);
+
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'data' => ['logo_path' => $logoPath]]);
+        } else {
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Erreur lors de l\'enregistrement']);
+        }
+        exit;
+    }
+
+    // DELETE /api/user/logo
+    if ($uri === '/api/user/logo' && $_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        $auth = new \App\Middleware\AuthMiddleware();
+        $user = $auth->requireAuth();
+        if (!$user) exit;
+
+        $userRepo = new \App\Models\UserRepository();
+        $companyId = $userRepo->getCompanyId($auth->getUserId());
+
+        // Get current logo path and delete file
+        $profile = $userRepo->getFullProfile($auth->getUserId());
+        if ($profile && $profile['logo_path']) {
+            $filepath = __DIR__ . '/' . $profile['logo_path'];
+            if (file_exists($filepath)) {
+                unlink($filepath);
+            }
+        }
+
+        $userRepo->updateCompanyLogo($companyId, null);
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
+    // === Quotes Routes ===
+
+    // GET /api/quotes
+    if ($uri === '/api/quotes' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        $auth = new \App\Middleware\AuthMiddleware();
+        $user = $auth->requireAuth();
+        if (!$user) exit;
+
+        $quoteRepo = new \App\Models\QuoteRepository();
+        $quotes = $quoteRepo->findByUserId($auth->getUserId());
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'data' => ['quotes' => $quotes]]);
+        exit;
+    }
+
+    // DELETE /api/quotes/{id}
+    if (preg_match('#^/api/quotes/(\d+)$#', $uri, $matches) && $_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        $auth = new \App\Middleware\AuthMiddleware();
+        $user = $auth->requireAuth();
+        if (!$user) exit;
+
+        $quoteId = (int) $matches[1];
+        $quoteRepo = new \App\Models\QuoteRepository();
+
+        // Check ownership
+        $quote = $quoteRepo->findById($quoteId);
+        if (!$quote || $quote['user_id'] !== $auth->getUserId()) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Accès refusé']);
+            exit;
+        }
+
+        $quoteRepo->delete($quoteId);
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true]);
         exit;
     }
 
@@ -196,9 +397,16 @@ try {
     }
 
     // GET /api/quote/{id}
-    if (preg_match('#^/api/quote/([^/]+)$#', $uri, $matches)) {
+    if (preg_match('#^/api/quote/(\d+)$#', $uri, $matches) && $_SERVER['REQUEST_METHOD'] === 'GET') {
         $controller = new \App\Controllers\ApiController();
         $controller->getQuote($matches[1]);
+        exit;
+    }
+
+    // PUT /api/quote/{id}
+    if (preg_match('#^/api/quote/(\d+)$#', $uri, $matches) && $_SERVER['REQUEST_METHOD'] === 'PUT') {
+        $controller = new \App\Controllers\ApiController();
+        $controller->updateQuote((int) $matches[1]);
         exit;
     }
 
@@ -246,6 +454,20 @@ try {
         exit;
     }
 
+    // === Configuration JavaScript dynamique ===
+    if ($uri === '/js/config.js') {
+        header('Content-Type: application/javascript; charset=utf-8');
+        header('Cache-Control: no-cache, must-revalidate');
+        $jsBasePath = $_ENV['APP_BASE_PATH'] ?? '';
+        $vapidKey = $_ENV['VAPID_PUBLIC_KEY'] ?? '';
+        echo "window.CHIFFREO_CONFIG = {\n";
+        echo "    BASE_PATH: " . json_encode($jsBasePath) . ",\n";
+        echo "    API_BASE: " . json_encode($jsBasePath . '/api') . ",\n";
+        echo "    VAPID_PUBLIC_KEY: " . json_encode($vapidKey) . "\n";
+        echo "};\n";
+        exit;
+    }
+
     // === Static Files (servis directement par Apache normalement) ===
 
     // Service Worker
@@ -278,6 +500,16 @@ try {
     // Page d'onboarding
     if ($uri === '/onboarding' || $uri === '/onboarding.html') {
         $file = __DIR__ . '/onboarding.html';
+        if (file_exists($file)) {
+            header('Content-Type: text/html; charset=utf-8');
+            readfile($file);
+            exit;
+        }
+    }
+
+    // Page paramètres utilisateur
+    if ($uri === '/settings' || $uri === '/settings.html' || $uri === '/account') {
+        $file = __DIR__ . '/settings.html';
         if (file_exists($file)) {
             header('Content-Type: text/html; charset=utf-8');
             readfile($file);

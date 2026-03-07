@@ -274,6 +274,34 @@ class AuthController
                 $this->companyRepo->update($userData['company_id'], $companyUpdates);
             }
 
+            // Données de tarification utilisateur
+            $pricingUpdates = [];
+            if (isset($input['hourly_rate'])) {
+                $pricingUpdates['hourly_rate'] = (float) $input['hourly_rate'];
+            }
+            if (isset($input['product_margin'])) {
+                $pricingUpdates['product_margin'] = (float) $input['product_margin'];
+            }
+            if (isset($input['supplier_discount'])) {
+                $pricingUpdates['supplier_discount'] = (float) $input['supplier_discount'];
+            }
+            if (isset($input['travel_type']) && in_array($input['travel_type'], ['free', 'fixed', 'per_km'])) {
+                $pricingUpdates['travel_type'] = $input['travel_type'];
+            }
+            if (isset($input['travel_fixed_amount'])) {
+                $pricingUpdates['travel_fixed_amount'] = (float) $input['travel_fixed_amount'];
+            }
+            if (isset($input['travel_per_km'])) {
+                $pricingUpdates['travel_per_km'] = (float) $input['travel_per_km'];
+            }
+            if (isset($input['travel_free_radius'])) {
+                $pricingUpdates['travel_free_radius'] = (int) $input['travel_free_radius'];
+            }
+
+            if (!empty($pricingUpdates)) {
+                $this->userRepo->updatePricing($userData['id'], $pricingUpdates);
+            }
+
             $this->logAction('onboarding_update', $userData['id']);
 
             $user = $this->userRepo->findById($userData['id']);

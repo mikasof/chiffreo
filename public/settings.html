@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1B4D3E">
+
+    <title>Mon compte - Chiffreo</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/logo_chiffreo.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
+
+    <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="css/settings.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <a href="./" class="logo">
+                    <img src="icons/logo_chiffreo.png" alt="Chiffreo" class="logo-img">
+                    <span>Chiffreo</span>
+                </a>
+
+                <div class="header-actions">
+                    <a href="index.html" class="btn-back-app">
+                        <i class="ph ph-arrow-left"></i>
+                        <span>Retour à l'app</span>
+                    </a>
+
+                    <div id="user-menu" class="user-menu">
+                        <button class="user-menu-toggle">
+                            <div class="user-avatar">
+                                <i class="ph ph-user"></i>
+                            </div>
+                            <span class="user-name">Utilisateur</span>
+                            <i class="ph ph-caret-down"></i>
+                        </button>
+                        <div class="user-dropdown">
+                            <button id="logout-btn" class="dropdown-item logout">
+                                <i class="ph ph-sign-out"></i>
+                                <span>Déconnexion</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main settings-main">
+            <div class="settings-container">
+                <h1 class="settings-title">
+                    <i class="ph ph-gear"></i>
+                    Mon compte
+                </h1>
+
+                <!-- Tabs -->
+                <nav class="settings-tabs">
+                    <button class="tab-btn active" data-tab="quotes">
+                        <i class="ph ph-files"></i>
+                        <span>Mes devis</span>
+                    </button>
+                    <button class="tab-btn" data-tab="company">
+                        <i class="ph ph-buildings"></i>
+                        <span>Entreprise</span>
+                    </button>
+                    <button class="tab-btn" data-tab="pricing">
+                        <i class="ph ph-currency-eur"></i>
+                        <span>Tarification</span>
+                    </button>
+                    <button class="tab-btn" data-tab="travel">
+                        <i class="ph ph-car"></i>
+                        <span>Déplacement</span>
+                    </button>
+                </nav>
+
+                <!-- Tab Contents -->
+                <div class="tab-contents">
+
+                    <!-- Mes devis -->
+                    <section id="tab-quotes" class="tab-content active">
+                        <div class="section-header">
+                            <h2>Mes devis</h2>
+                            <p class="section-desc">Historique de vos devis générés</p>
+                        </div>
+
+                        <div id="quotes-loading" class="loading-placeholder">
+                            <div class="loading-spinner"></div>
+                            <p>Chargement...</p>
+                        </div>
+
+                        <div id="quotes-empty" class="empty-state" style="display: none;">
+                            <i class="ph ph-file-dashed"></i>
+                            <p>Aucun devis généré</p>
+                            <a href="index.html" class="btn-primary">
+                                <i class="ph ph-plus"></i>
+                                Créer mon premier devis
+                            </a>
+                        </div>
+
+                        <div id="quotes-list" class="quotes-list" style="display: none;"></div>
+                    </section>
+
+                    <!-- Entreprise -->
+                    <section id="tab-company" class="tab-content">
+                        <div class="section-header">
+                            <h2>Informations entreprise</h2>
+                            <p class="section-desc">Ces informations apparaîtront sur vos devis</p>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="ph ph-info"></i>
+                            <span>Remplissez ces champs pour pouvoir générer des PDF de devis professionnels.</span>
+                        </div>
+
+                        <form id="company-form" class="settings-form">
+                            <div class="form-section">
+                                <h3 class="form-section-title">Identité</h3>
+
+                                <div class="form-group">
+                                    <label for="company-name">Raison sociale *</label>
+                                    <input type="text" id="company-name" placeholder="Ex: Électricité Dupont SARL">
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="siret">SIRET *</label>
+                                        <input type="text" id="siret" placeholder="12345678901234" maxlength="14" pattern="[0-9]{14}">
+                                        <span class="field-hint">14 chiffres</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="vat-number">N° TVA intracommunautaire</label>
+                                        <input type="text" id="vat-number" placeholder="FR12345678901">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3 class="form-section-title">Coordonnées</h3>
+
+                                <div class="form-group">
+                                    <label for="address-line1">Adresse *</label>
+                                    <input type="text" id="address-line1" placeholder="15 rue des Artisans">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="address-line2">Complément d'adresse</label>
+                                    <input type="text" id="address-line2" placeholder="Bâtiment B">
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group form-group-small">
+                                        <label for="postal-code">Code postal *</label>
+                                        <input type="text" id="postal-code" placeholder="75001" maxlength="5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="city">Ville *</label>
+                                        <input type="text" id="city" placeholder="Paris">
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="phone">Téléphone *</label>
+                                        <input type="tel" id="phone" placeholder="01 23 45 67 89">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="email-pro">Email professionnel</label>
+                                        <input type="email" id="email-pro" placeholder="contact@entreprise.fr">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3 class="form-section-title">Assurance</h3>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="insurance-name">Assurance décennale</label>
+                                        <input type="text" id="insurance-name" placeholder="Ex: AXA Assurances">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="insurance-number">N° de police</label>
+                                        <input type="text" id="insurance-number" placeholder="123456789">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3 class="form-section-title">Logo</h3>
+                                <div class="logo-upload">
+                                    <div id="logo-preview" class="logo-preview">
+                                        <i class="ph ph-image"></i>
+                                        <span>Aucun logo</span>
+                                    </div>
+                                    <div class="logo-actions">
+                                        <input type="file" id="logo-input" accept="image/*" style="display: none;">
+                                        <button type="button" id="upload-logo-btn" class="btn-secondary">
+                                            <i class="ph ph-upload"></i>
+                                            Télécharger un logo
+                                        </button>
+                                        <button type="button" id="remove-logo-btn" class="btn-text-danger" style="display: none;">
+                                            <i class="ph ph-trash"></i>
+                                            Supprimer
+                                        </button>
+                                        <span class="field-hint">PNG ou JPG, max 500 KB</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">
+                                    <i class="ph ph-check"></i>
+                                    Enregistrer
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+
+                    <!-- Tarification -->
+                    <section id="tab-pricing" class="tab-content">
+                        <div class="section-header">
+                            <h2>Paramètres de tarification</h2>
+                            <p class="section-desc">Personnalisez vos prix et marges</p>
+                        </div>
+
+                        <form id="pricing-form" class="settings-form">
+                            <div class="form-section">
+                                <h3 class="form-section-title">Main d'œuvre</h3>
+
+                                <div class="form-group">
+                                    <label for="hourly-rate">Taux horaire (€/h)</label>
+                                    <input type="number" id="hourly-rate" min="0" step="0.5" placeholder="45">
+                                    <span class="field-hint">Laissez vide pour utiliser les prix de la grille standard</span>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3 class="form-section-title">Fournitures</h3>
+
+                                <div class="form-group">
+                                    <label for="supplier-discount">
+                                        Remise fournisseur (%)
+                                        <span class="label-badge">Carte pro</span>
+                                    </label>
+                                    <input type="number" id="supplier-discount" min="0" max="60" step="5" value="0">
+                                    <span class="field-hint">Remise que vous obtenez sur les prix publics (carte pro, grossiste...)</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="product-margin">Marge sur matériel (%)</label>
+                                    <input type="number" id="product-margin" min="0" max="100" step="5" value="20">
+                                    <span class="field-hint">Marge que vous appliquez sur le prix d'achat</span>
+                                </div>
+
+                                <div class="pricing-example">
+                                    <h4>Exemple de calcul</h4>
+                                    <div class="example-calc">
+                                        <div class="calc-line">
+                                            <span>Prix public HT</span>
+                                            <span id="ex-public">100,00 €</span>
+                                        </div>
+                                        <div class="calc-line calc-minus">
+                                            <span>Remise fournisseur (<span id="ex-discount-pct">0</span>%)</span>
+                                            <span id="ex-discount">- 0,00 €</span>
+                                        </div>
+                                        <div class="calc-line">
+                                            <span>= Prix d'achat</span>
+                                            <span id="ex-purchase">100,00 €</span>
+                                        </div>
+                                        <div class="calc-line calc-plus">
+                                            <span>Marge (<span id="ex-margin-pct">20</span>%)</span>
+                                            <span id="ex-margin">+ 20,00 €</span>
+                                        </div>
+                                        <div class="calc-line calc-result">
+                                            <span>= Prix de vente HT</span>
+                                            <span id="ex-sale">120,00 €</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3 class="form-section-title">Gamme de prix par défaut</h3>
+
+                                <div class="tier-selector">
+                                    <label class="tier-option">
+                                        <input type="radio" name="default-tier" value="low">
+                                        <div class="tier-card">
+                                            <i class="ph ph-coins"></i>
+                                            <span class="tier-name">Entrée de gamme</span>
+                                            <span class="tier-desc">Prix économiques</span>
+                                        </div>
+                                    </label>
+                                    <label class="tier-option">
+                                        <input type="radio" name="default-tier" value="mid" checked>
+                                        <div class="tier-card">
+                                            <i class="ph ph-star"></i>
+                                            <span class="tier-name">Milieu de gamme</span>
+                                            <span class="tier-desc">Rapport qualité/prix</span>
+                                        </div>
+                                    </label>
+                                    <label class="tier-option">
+                                        <input type="radio" name="default-tier" value="high">
+                                        <div class="tier-card">
+                                            <i class="ph ph-crown"></i>
+                                            <span class="tier-name">Haut de gamme</span>
+                                            <span class="tier-desc">Premium</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">
+                                    <i class="ph ph-check"></i>
+                                    Enregistrer
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+
+                    <!-- Déplacement -->
+                    <section id="tab-travel" class="tab-content">
+                        <div class="section-header">
+                            <h2>Frais de déplacement</h2>
+                            <p class="section-desc">Configurez comment facturer vos déplacements</p>
+                        </div>
+
+                        <form id="travel-form" class="settings-form">
+                            <div class="form-section">
+                                <h3 class="form-section-title">Mode de facturation</h3>
+
+                                <div class="travel-type-selector">
+                                    <label class="travel-option">
+                                        <input type="radio" name="travel-type" value="none" checked>
+                                        <div class="travel-card">
+                                            <i class="ph ph-x-circle"></i>
+                                            <span>Pas de frais</span>
+                                        </div>
+                                    </label>
+                                    <label class="travel-option">
+                                        <input type="radio" name="travel-type" value="fixed">
+                                        <div class="travel-card">
+                                            <i class="ph ph-currency-eur"></i>
+                                            <span>Forfait fixe</span>
+                                        </div>
+                                    </label>
+                                    <label class="travel-option">
+                                        <input type="radio" name="travel-type" value="per_km">
+                                        <div class="travel-card">
+                                            <i class="ph ph-path"></i>
+                                            <span>Au kilomètre</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div id="travel-fixed-section" class="form-section" style="display: none;">
+                                <h3 class="form-section-title">Forfait déplacement</h3>
+                                <div class="form-group">
+                                    <label for="travel-fixed">Montant forfaitaire HT (€)</label>
+                                    <input type="number" id="travel-fixed" min="0" step="1" value="30">
+                                </div>
+                            </div>
+
+                            <div id="travel-km-section" class="form-section" style="display: none;">
+                                <h3 class="form-section-title">Tarification au kilomètre</h3>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="travel-per-km">Prix par km (€)</label>
+                                        <input type="number" id="travel-per-km" min="0" step="0.05" value="0.50">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="travel-free-radius">Rayon gratuit (km)</label>
+                                        <input type="number" id="travel-free-radius" min="0" step="1" value="10">
+                                        <span class="field-hint">Pas de frais dans ce rayon</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">
+                                    <i class="ph ph-check"></i>
+                                    Enregistrer
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Chiffreo &copy; 2026 &mdash; Propulsé par MSConseil</p>
+        </footer>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="js/config.js?v=5"></script>
+    <script src="js/settings.js?v=1"></script>
+</body>
+</html>

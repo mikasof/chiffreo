@@ -168,6 +168,33 @@ body {
     background: var(--color-primary-light);
 }
 
+.nav-login {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    transition: all var(--transition-fast);
+}
+
+.nav-login:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(27, 77, 62, 0.05);
+}
+
+.nav-login.logged-in {
+    border-color: var(--color-primary);
+    background: rgba(27, 77, 62, 0.08);
+    color: var(--color-primary);
+}
+
+.nav-login i {
+    font-size: 1.1em;
+}
+
 /* === Hero Section === */
 .hero {
     padding: calc(80px + var(--space-16)) var(--space-6) var(--space-16);
@@ -1168,6 +1195,19 @@ body {
 
     .nav-link {
         display: none;
+    }
+
+    .nav-login {
+        display: flex;
+        padding: var(--space-2);
+    }
+
+    .nav-login span {
+        display: none;
+    }
+
+    .nav-login i {
+        font-size: 1.3em;
     }
 
     .hero {
