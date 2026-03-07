@@ -7,11 +7,13 @@ use App\Services\QuoteCalculator;
 use App\Services\QuotePdfRenderer;
 use App\Services\NormsService;
 use App\Services\QuotaService;
+use App\Services\ProductSearchService;
 use App\Models\QuoteRepository;
 use App\Models\UserRepository;
 use App\Models\CompanyRepository;
 use App\Middleware\RateLimiter;
 use App\Middleware\AuthMiddleware;
+use App\Database\Connection;
 
 /**
  * Controller principal de l'API
@@ -28,10 +30,13 @@ class ApiController
     private QuotaService $quotaService;
     private UserRepository $userRepo;
     private CompanyRepository $companyRepo;
+    private ProductSearchService $productSearch;
+    private \PDO $db;
 
     public function __construct()
     {
-        $this->openAI = new OpenAIClient();
+        $this->db = Connection::getInstance();
+        $this->openAI = new OpenAIClient($this->db);
         $this->calculator = new QuoteCalculator();
         $this->pdfRenderer = new QuotePdfRenderer();
         $this->normsService = new NormsService();
@@ -41,6 +46,7 @@ class ApiController
         $this->quotaService = new QuotaService();
         $this->userRepo = new UserRepository();
         $this->companyRepo = new CompanyRepository();
+        $this->productSearch = new ProductSearchService($this->db);
     }
 
     /**
@@ -872,6 +878,128 @@ class ApiController
         }
 
         return $imageUrls;
+    }
+
+    /**
+     * POST /api/price-correction
+     * Enregistre une correction de prix faite par l'utilisateur
+     */
+    public function recordPriceCorrection(): void
+    {
+        try {
+            // Authentification requise
+            $user = $this->auth->authenticate();
+            if (!$user) {
+                $this->jsonError('Authentification requise', 401);
+                return;
+            }
+
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                $this->jsonError('Méthode non autorisée', 405);
+                return;
+            }
+
+            $input = json_decode(file_get_contents('php://input'), true);
+
+            // Validation des champs requis
+            $required = ['marque', 'designation', 'prix_initial', 'prix_corrige'];
+            foreach ($required as $field) {
+                if (empty($input[$field]) && $input[$field] !== 0) {
+                    $this->jsonError("Le champ {$field} est requis", 400);
+                    return;
+                }
+            }
+
+            $success = $this->productSearch->recordPriceCorrection(
+                $user['id'],
+                $input['marque'],
+                $input['reference'] ?? null,
+                $input['designation'],
+                (float) $input['prix_initial'],
+                (float) $input['prix_corrige'],
+                $input['gamme'] ?? 'mid',
+                $input['quote_id'] ?? null,
+                $input['source'] ?? null,
+                $input['commentaire'] ?? null
+            );
+
+            if ($success) {
+                $this->jsonSuccess([
+                    'message' => 'Correction enregistrée',
+                    'marque' => $input['marque'],
+                    'reference' => $input['reference'] ?? null,
+                    'prix_corrige' => (float) $input['prix_corrige']
+                ]);
+            } else {
+                $this->jsonError('Erreur lors de l\'enregistrement', 500);
+            }
+
+        } catch (\Exception $e) {
+            $this->logError('price_correction', $e->getMessage());
+            $this->jsonError('Erreur serveur', 500);
+        }
+    }
+
+    /**
+     * GET /api/product-search
+     * Recherche le prix d'un produit
+     */
+    public function searchProductPrice(): void
+    {
+        try {
+            // Authentification requise
+            $user = $this->auth->authenticate();
+            if (!$user) {
+                $this->jsonError('Authentification requise', 401);
+                return;
+            }
+
+            $marque = $_GET['marque'] ?? '';
+            $reference = $_GET['reference'] ?? '';
+            $designation = $_GET['designation'] ?? '';
+            $gamme = $_GET['gamme'] ?? 'mid';
+
+            if (empty($marque) && empty($reference)) {
+                $this->jsonError('Marque ou référence requise', 400);
+                return;
+            }
+
+            $result = $this->productSearch->searchProductPrice(
+                $marque,
+                $reference,
+                $designation,
+                $gamme
+            );
+
+            $this->jsonSuccess($result);
+
+        } catch (\Exception $e) {
+            $this->logError('product_search', $e->getMessage());
+            $this->jsonError('Erreur serveur', 500);
+        }
+    }
+
+    /**
+     * GET /api/price-stats
+     * Statistiques sur le cache de prix (admin)
+     */
+    public function getPriceStats(): void
+    {
+        try {
+            // Authentification requise
+            $user = $this->auth->authenticate();
+            if (!$user) {
+                $this->jsonError('Authentification requise', 401);
+                return;
+            }
+
+            $stats = $this->productSearch->getCacheStats();
+            $this->jsonSuccess($stats);
+
+        } catch (\Exception $e) {
+            $this->logError('price_stats', $e->getMessage());
+            $this->jsonError('Erreur serveur', 500);
+        }
     }
 
     /**

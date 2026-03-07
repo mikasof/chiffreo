@@ -895,6 +895,21 @@ HTML;
     {
         $html = '<tr>';
         $html .= '<td>' . $this->escape($ligne['designation'] ?? '');
+
+        // Afficher marque et référence si disponibles
+        $marque = $ligne['marque'] ?? null;
+        $reference = $ligne['reference'] ?? null;
+        if ($marque || $reference) {
+            $refParts = [];
+            if ($marque) {
+                $refParts[] = $marque;
+            }
+            if ($reference) {
+                $refParts[] = 'Réf: ' . $reference;
+            }
+            $html .= '<br><small style="color:#1B4D3E;font-size:7pt;font-weight:500;">' . $this->escape(implode(' - ', $refParts)) . '</small>';
+        }
+
         if (!empty($ligne['commentaire'])) {
             $html .= '<br><small style="color:#888;font-size:7pt;">' . $this->escape($ligne['commentaire']) . '</small>';
         }

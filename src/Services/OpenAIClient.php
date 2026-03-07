@@ -15,12 +15,13 @@ class OpenAIClient
     private string $apiKey;
     private string $baseUrl = 'https://api.openai.com/v1/';
     private NormsService $normsService;
+    private ?ProductSearchService $productSearchService = null;
 
     // Modèles recommandés
     private string $transcriptionModel = 'whisper-1';
     private string $chatModel = 'gpt-4o';
 
-    public function __construct()
+    public function __construct(?\PDO $db = null)
     {
         $this->apiKey = $_ENV['OPENAI_API_KEY'] ?? '';
 
@@ -37,6 +38,11 @@ class OpenAIClient
         ]);
 
         $this->normsService = new NormsService();
+
+        // Initialiser le service de recherche de produits avec la BDD si disponible
+        if ($db !== null) {
+            $this->productSearchService = new ProductSearchService($db);
+        }
     }
 
     /**
@@ -387,15 +393,29 @@ PROMPT;
 
             $this->log('INFO', 'Ligne analysée avec succès', $parsed);
 
-            // Si une référence est détectée, rechercher le prix réel sur le web
+            // Si une référence est détectée, rechercher le prix réel
             if (!empty($parsed['reference']) && !empty($parsed['marque'])) {
-                $realPrice = $this->searchProductPrice($parsed['marque'], $parsed['reference']);
-                if ($realPrice !== null) {
-                    $parsed['prix_unitaire_ht'] = $realPrice;
-                    $parsed['prix_source'] = 'web';
-                    $this->log('INFO', 'Prix réel trouvé via recherche web', [
+                $priceResult = $this->searchProductPrice(
+                    $parsed['marque'],
+                    $parsed['reference'],
+                    $parsed['designation'] ?? '',
+                    $parsed['gamme'] ?? 'mid'
+                );
+
+                if ($priceResult !== null && isset($priceResult['prix_ht'])) {
+                    $parsed['prix_unitaire_ht'] = $priceResult['prix_ht'];
+                    $parsed['prix_source'] = $priceResult['source'] ?? 'search';
+                    $parsed['prix_fiabilite'] = $priceResult['fiabilite'] ?? 50;
+
+                    // Enrichir la désignation si disponible
+                    if (!empty($priceResult['designation']) && strlen($priceResult['designation']) > strlen($parsed['designation'])) {
+                        $parsed['designation'] = $priceResult['designation'];
+                    }
+
+                    $this->log('INFO', 'Prix trouvé via recherche', [
                         'reference' => $parsed['reference'],
-                        'prix' => $realPrice
+                        'prix' => $priceResult['prix_ht'],
+                        'source' => $priceResult['source']
                     ]);
                 }
             }
@@ -409,59 +429,46 @@ PROMPT;
     }
 
     /**
-     * Recherche le prix réel d'un produit via OpenAI web search
+     * Recherche le prix réel d'un produit via le ProductSearchService
      *
      * @param string $marque Marque du produit
      * @param string $reference Référence produit
-     * @return float|null Prix trouvé ou null
+     * @param string $designation Description du produit (optionnel)
+     * @param string $gamme Gamme de prix (low, mid, high)
+     * @return array|null Données de prix ou null
      */
-    private function searchProductPrice(string $marque, string $reference): ?float
-    {
-        $this->log('INFO', 'Recherche prix web', ['marque' => $marque, 'reference' => $reference]);
-
-        $searchQuery = "{$marque} {$reference} prix";
+    private function searchProductPrice(
+        string $marque,
+        string $reference,
+        string $designation = '',
+        string $gamme = 'mid'
+    ): ?array {
+        // Créer le service s'il n'existe pas (sans BDD pour le cache)
+        if ($this->productSearchService === null) {
+            $this->productSearchService = new ProductSearchService();
+        }
 
         try {
-            $response = $this->httpClient->post('responses', [
-                'json' => [
-                    'model' => 'gpt-4o-mini',
-                    'tools' => [
-                        ['type' => 'web_search']
-                    ],
-                    'input' => "Recherche le prix de vente en France du produit {$marque} référence {$reference}.
+            $result = $this->productSearchService->searchProductPrice(
+                $marque,
+                $reference,
+                $designation,
+                $gamme
+            );
 
-Retourne UNIQUEMENT un nombre décimal représentant le prix HT en euros (sans le symbole €).
-Si tu trouves un prix TTC, divise-le par 1.20 pour obtenir le HT.
-Si tu ne trouves pas le prix exact, retourne 'null'.
-
-Exemples de réponse valide: 89.90 ou 125.00 ou null"
-                ]
+            $this->log('INFO', 'Prix trouvé via ProductSearchService', [
+                'marque' => $marque,
+                'reference' => $reference,
+                'prix_ht' => $result['prix_ht'],
+                'source' => $result['source'],
+                'fiabilite' => $result['fiabilite']
             ]);
 
-            $result = json_decode($response->getBody()->getContents(), true);
-            $content = $result['output'][0]['content'][0]['text'] ?? '';
+            return $result;
 
-            $this->log('INFO', 'Réponse recherche prix', ['response' => $content]);
-
-            // Extraire le prix de la réponse
-            $content = trim($content);
-            if ($content === 'null' || empty($content)) {
-                return null;
-            }
-
-            // Nettoyer et convertir en float
-            $price = preg_replace('/[^\d.,]/', '', $content);
-            $price = str_replace(',', '.', $price);
-
-            if (is_numeric($price)) {
-                return round((float) $price, 2);
-            }
-
+        } catch (\Exception $e) {
+            $this->log('WARNING', 'Erreur recherche prix', ['error' => $e->getMessage()]);
             return null;
-
-        } catch (GuzzleException $e) {
-            $this->log('WARNING', 'Erreur recherche prix web', ['error' => $e->getMessage()]);
-            return null; // Ne pas bloquer si la recherche échoue
         }
     }
 

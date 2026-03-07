@@ -77,8 +77,8 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    // Déjà connecté, rediriger
-                    const redirect = data.data.user.onboarding_completed ? BASE_PATH + '/app' : BASE_PATH + '/onboarding';
+                    // Déjà connecté, rediriger vers settings (interface utilisateur)
+                    const redirect = data.data.user.onboarding_completed ? BASE_PATH + '/settings' : BASE_PATH + '/onboarding';
                     window.location.href = redirect;
                 }
             })
@@ -150,8 +150,8 @@
                     document.cookie = `auth_token=${data.data.token}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Strict`;
                 }
 
-                // Rediriger (ajouter BASE_PATH au redirect de l'API)
-                const redirect = data.data.redirect ? BASE_PATH + data.data.redirect : BASE_PATH + '/app';
+                // Rediriger vers settings (interface utilisateur) par défaut
+                const redirect = data.data.redirect ? BASE_PATH + data.data.redirect : BASE_PATH + '/settings';
                 window.location.href = redirect;
             } else {
                 showError(loginError, data.error || 'Erreur de connexion');

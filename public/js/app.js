@@ -773,8 +773,20 @@ async function handleSubmit(e) {
         state.currentQuote = result.data;
         renderQuoteResult(result.data);
 
+        // Activer le mode édition immédiatement après création
+        // pour que les modifications soient auto-sauvegardées
+        if (result.data.id) {
+            state.editMode = true;
+            state.editQuoteId = result.data.id;
+            state.hasChanges = false;
+            console.log('[Chiffreo] Mode édition activé pour devis ID:', result.data.id);
+        }
+
         hideLoading();
         elements.resultSection.style.display = 'block';
+        if (elements.saveQuoteBtn) {
+            elements.saveQuoteBtn.style.display = 'flex';
+        }
         elements.resultSection.scrollIntoView({ behavior: 'smooth' });
 
         showToast('Devis généré avec succès', 'success');
@@ -1096,9 +1108,54 @@ async function saveQuote() {
 }
 
 // Marquer le devis comme modifié après une action d'édition
+// Et sauvegarder automatiquement avec un délai (debounce)
+let autoSaveTimeout = null;
+
 function markAsChanged() {
     if (state.editMode) {
         state.hasChanges = true;
+
+        // Auto-save avec debounce de 1 seconde
+        if (autoSaveTimeout) {
+            clearTimeout(autoSaveTimeout);
+        }
+        autoSaveTimeout = setTimeout(() => {
+            autoSaveQuote();
+        }, 1000);
+    }
+}
+
+// Sauvegarde automatique silencieuse
+async function autoSaveQuote() {
+    if (!state.editMode || !state.editQuoteId || !state.hasChanges) {
+        return;
+    }
+
+    try {
+        const payload = {
+            client: state.client,
+            chantier: state.chantier,
+            quote: state.currentQuote.quote
+        };
+
+        const response = await fetch(`${BASE_PATH}/api/quote/${state.editQuoteId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                ...Auth.getAuthHeader()
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            state.hasChanges = false;
+            console.log('[Chiffreo] Auto-save réussi');
+        } else {
+            console.error('[Chiffreo] Auto-save échoué:', data.error);
+        }
+    } catch (error) {
+        console.error('[Chiffreo] Erreur auto-save:', error);
     }
 }
 
@@ -1290,6 +1347,9 @@ async function parseVoiceLine(audioBlob) {
 }
 
 // === Édition des lignes ===
+// Stocke les données originales pour détecter les changements de prix
+let editingLineOriginal = null;
+
 function openEditModal(index) {
     const isNew = index === -1;
 
@@ -1303,6 +1363,7 @@ function openEditModal(index) {
         elements.editQuantite.value = '1';
         elements.editUnite.value = 'u';
         elements.editPrixUnitaire.value = '0';
+        editingLineOriginal = null;
     } else {
         // Édition - charger les valeurs existantes
         const ligne = state.currentQuote.quote.lignes[index];
@@ -1311,6 +1372,15 @@ function openEditModal(index) {
         elements.editQuantite.value = ligne.quantite || 1;
         elements.editUnite.value = ligne.unite || 'u';
         elements.editPrixUnitaire.value = ligne.prix_unitaire_ht || 0;
+
+        // Stocker les données originales pour détecter les changements de prix
+        editingLineOriginal = {
+            designation: ligne.designation,
+            marque: ligne.marque || null,
+            reference: ligne.reference || null,
+            prix_unitaire_ht: ligne.prix_unitaire_ht || 0,
+            categorie: ligne.categorie
+        };
     }
 
     updateModalTotal();
@@ -1369,9 +1439,32 @@ function saveLine() {
         state.currentQuote.quote.lignes.push(ligne);
         showToast('Ligne ajoutée', 'success');
     } else {
+        // Conserver marque et référence de la ligne originale
+        if (editingLineOriginal) {
+            ligne.marque = editingLineOriginal.marque;
+            ligne.reference = editingLineOriginal.reference;
+        }
+
         state.currentQuote.quote.lignes[index] = ligne;
         showToast('Ligne modifiée', 'success');
+
+        // Si le prix a changé et c'est du matériel, enregistrer la correction
+        if (editingLineOriginal &&
+            editingLineOriginal.categorie === 'materiel' &&
+            editingLineOriginal.prix_unitaire_ht !== prixUnitaire) {
+
+            recordPriceCorrection(
+                editingLineOriginal.marque,
+                editingLineOriginal.reference,
+                editingLineOriginal.designation,
+                editingLineOriginal.prix_unitaire_ht,
+                prixUnitaire
+            );
+        }
     }
+
+    // Reset des données originales
+    editingLineOriginal = null;
 
     // Marquer comme modifié en mode édition
     markAsChanged();
@@ -1380,6 +1473,45 @@ function saveLine() {
     recalculateTotals();
     renderQuoteLines();
     closeEditModal();
+}
+
+// Enregistrer une correction de prix dans la grille
+async function recordPriceCorrection(marque, reference, designation, prixInitial, prixCorrige) {
+    // Si pas de marque, on ne peut pas enregistrer (trop générique)
+    if (!marque && !reference) {
+        console.log('[Chiffreo] Correction non enregistrée: pas de marque/référence');
+        return;
+    }
+
+    try {
+        const payload = {
+            marque: marque || 'Générique',
+            reference: reference,
+            designation: designation,
+            prix_initial: prixInitial,
+            prix_corrige: prixCorrige,
+            gamme: 'mid',
+            quote_id: state.editQuoteId,
+            source: 'user_correction'
+        };
+
+        const response = await fetch(`${BASE_PATH}/api/price-correction`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...Auth.getAuthHeader()
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            console.log('[Chiffreo] Correction de prix enregistrée:', payload.designation);
+            showToast('Prix corrigé et mémorisé pour les futurs devis', 'info');
+        }
+    } catch (error) {
+        console.error('[Chiffreo] Erreur enregistrement correction:', error);
+    }
 }
 
 function deleteLine(index) {

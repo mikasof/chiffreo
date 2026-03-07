@@ -450,6 +450,29 @@ try {
         exit;
     }
 
+    // === Product Price Routes ===
+
+    // POST /api/price-correction (correction de prix utilisateur)
+    if ($uri === '/api/price-correction' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $controller = new \App\Controllers\ApiController();
+        $controller->recordPriceCorrection();
+        exit;
+    }
+
+    // GET /api/product-search (recherche prix produit)
+    if ($uri === '/api/product-search' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        $controller = new \App\Controllers\ApiController();
+        $controller->searchProductPrice();
+        exit;
+    }
+
+    // GET /api/price-stats (statistiques du cache de prix)
+    if ($uri === '/api/price-stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        $controller = new \App\Controllers\ApiController();
+        $controller->getPriceStats();
+        exit;
+    }
+
     // === PDF Routes ===
 
     // GET /pdf/quote/{id}

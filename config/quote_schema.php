@@ -84,6 +84,14 @@ return [
                                 'type' => 'string',
                                 'description' => 'Description de la ligne'
                             ],
+                            'marque' => [
+                                'type' => ['string', 'null'],
+                                'description' => 'Marque du produit si mentionnée (Legrand, Schneider, Hager, etc.) sinon null'
+                            ],
+                            'reference' => [
+                                'type' => ['string', 'null'],
+                                'description' => 'Référence produit si mentionnée (ex: 369220, A9F74206) sinon null'
+                            ],
                             'categorie' => [
                                 'type' => 'string',
                                 'enum' => ['materiel', 'main_oeuvre', 'forfait'],
@@ -110,7 +118,7 @@ return [
                                 'description' => 'Commentaire optionnel'
                             ]
                         ],
-                        'required' => ['designation', 'categorie', 'unite', 'quantite', 'prix_ref_code', 'prix_unitaire_ht_suggere', 'commentaire'],
+                        'required' => ['designation', 'marque', 'reference', 'categorie', 'unite', 'quantite', 'prix_ref_code', 'prix_unitaire_ht_suggere', 'commentaire'],
                         'additionalProperties' => false
                     ]
                 ],
@@ -185,6 +193,18 @@ Analyser la demande client et produire un devis structuré au format JSON strict
 3. **Être TRÈS réaliste sur les quantités** : les quantités doivent refléter une installation RÉELLE complète.
 4. **Inclure systématiquement** : déplacement, consommables, mise en service si pertinent.
 5. **TVA** : 20% par défaut. Mentionner en remarque si TVA réduite (10%) potentiellement applicable (rénovation logement > 2 ans).
+
+## Extraction des marques et références
+TRÈS IMPORTANT : Si le client mentionne une marque ou une référence produit, tu DOIS les capturer :
+- **marque** : Legrand, Schneider, Hager, Somfy, Aiphone, Atlantic, Grohe, etc.
+- **reference** : Numéro de référence fabricant (ex: 369220, A9F74206, 1870133)
+
+Exemples d'extraction :
+- "un disjoncteur Legrand 406774" → marque: "Legrand", reference: "406774"
+- "un interrupteur Schneider Odace" → marque: "Schneider", reference: null (pas de ref précise)
+- "un disjoncteur 16A" → marque: null, reference: null
+
+Si une marque est mentionnée, inclure la marque dans la désignation ET dans le champ marque.
 
 ## ESTIMATION RÉNOVATION COMPLÈTE - GUIDE ESSENTIEL
 
@@ -408,12 +428,20 @@ Pour une RÉNOVATION ÉLECTRIQUE COMPLÈTE d'une maison, voici les quantités MI
 ### Forfaits installation principaux
 - FORFAIT_POINT_LUM : Point lumineux complet (150€)
 - FORFAIT_PRISE : Prise complète avec câblage (120€)
-- FORFAIT_TABLEAU_RENOV : Rénovation tableau complet (1200€)
-- FORFAIT_TABLEAU_NEUF : Tableau neuf 4 rangées équipé (1800€)
 - FORFAIT_CONSUEL : Préparation Consuel (250€)
 - FORFAIT_RENOV_M2 : Rénovation complète au m² (130€/m²) ⭐ UTILISER POUR GROSSES RÉNOVATIONS
 - FORFAIT_POSE_BALLON : Pose ballon eau chaude (280€)
 - FORFAIT_POSE_RADIATEUR : Pose radiateur (120€/u)
+
+## RÈGLE TABLEAU ÉLECTRIQUE - TRÈS IMPORTANT
+Pour un tableau électrique, tu dois TOUJOURS DÉCOMPOSER les éléments :
+1. Coffret : TABLEAU_13M, TABLEAU_26M, TABLEAU_39M ou TABLEAU_52M selon le nombre de modules nécessaires
+2. Différentiels : ID_30MA_40A (1 par groupe de 8 circuits max)
+3. Disjoncteurs : DJ_10A, DJ_16A, DJ_20A, DJ_32A selon les circuits
+4. Accessoires : PEIGNE_H, PEIGNE_V, BORNIER_TERRE, PARAFOUDRE si nécessaire
+5. Main d'œuvre : MO_H pour la pose
+
+NE JAMAIS utiliser de forfait global "tableau complet" car cela crée des doublons avec les composants.
 
 ### Autre
 - CUSTOM : Article hors catalogue (préciser prix_unitaire_ht_suggere)

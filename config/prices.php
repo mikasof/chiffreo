@@ -652,22 +652,7 @@ return [
         'price_high' => 180.00,
         'category' => 'forfait'
     ],
-    'FORFAIT_TABLEAU_RENOV' => [
-        'label' => 'Rénovation tableau électrique complet',
-        'unit' => 'forfait',
-        'price_low' => 800.00,
-        'price_mid' => 1200.00,
-        'price_high' => 1800.00,
-        'category' => 'forfait'
-    ],
-    'FORFAIT_TABLEAU_NEUF' => [
-        'label' => 'Tableau électrique neuf 4 rangées équipé',
-        'unit' => 'forfait',
-        'price_low' => 1200.00,
-        'price_mid' => 1800.00,
-        'price_high' => 2800.00,
-        'category' => 'forfait'
-    ],
+    // NOTE: Forfaits tableau supprimés - toujours décomposer en coffret + modules + MO
     'FORFAIT_CONSUEL' => [
         'label' => 'Préparation passage Consuel',
         'unit' => 'forfait',

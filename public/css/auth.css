@@ -318,13 +318,17 @@ body {
 /* Toggle Password */
 .toggle-password {
     position: absolute;
-    right: var(--space-md);
+    right: var(--space-sm);
     background: none;
     border: none;
     cursor: pointer;
-    padding: var(--space-xs);
+    padding: var(--space-sm);
     color: var(--color-text-muted);
     transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
 }
 
 .toggle-password:hover {
@@ -332,7 +336,18 @@ body {
 }
 
 .toggle-password i {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
+    display: block;
+}
+
+/* Input avec bouton toggle password */
+.input-wrapper:has(.toggle-password) input {
+    padding-right: calc(var(--space-md) * 2 + 1.5rem);
+}
+
+/* Fallback pour les navigateurs sans support :has() */
+input[type="password"] {
+    padding-right: calc(var(--space-md) * 2 + 1.5rem) !important;
 }
 
 /* Password Strength */
