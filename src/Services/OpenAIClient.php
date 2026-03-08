@@ -506,6 +506,123 @@ PROMPT;
     }
 
     /**
+     * GÉNÉRATION DEVIS V2 - Système multi-agents délégué à OpenAI
+     *
+     * Nouvelle approche : OpenAI gère tout en interne avec ses connaissances métier.
+     * On injecte uniquement les paramètres business de l'utilisateur.
+     *
+     * @param string $description Description ou transcription du chantier
+     * @param array $userParams Paramètres de l'utilisateur (hourly_rate, product_margin, travel_type, etc.)
+     * @param array $imageUrls Images optionnelles
+     * @return array Le devis structuré avec marques et références précises
+     */
+    public function generateQuoteV2(
+        string $description,
+        array $userParams = [],
+        array $imageUrls = []
+    ): array {
+        $this->log('INFO', 'Début génération devis V2', [
+            'description_length' => strlen($description),
+            'images_count' => count($imageUrls),
+            'user_params' => array_keys($userParams)
+        ]);
+
+        // Charger la configuration du prompt V2
+        $promptConfig = require __DIR__ . '/../../config/quote_prompt_v2.php';
+
+        // Formater les paramètres utilisateur
+        $formatParametres = $promptConfig['format_parametres'];
+        $parametresText = $formatParametres($userParams);
+
+        // Contexte images
+        $imagesContext = '';
+        if (!empty($imageUrls)) {
+            $imagesContext = "### Images fournies\n" . count($imageUrls) . " image(s) jointe(s) - analyse-les pour comprendre le contexte.";
+        }
+
+        // Construire le prompt utilisateur
+        $userPrompt = str_replace(
+            ['{parametres}', '{transcription}', '{images_context}'],
+            [$parametresText, $description, $imagesContext],
+            $promptConfig['user_prompt_template']
+        );
+
+        // Construire les messages
+        $messages = [
+            [
+                'role' => 'system',
+                'content' => $promptConfig['system_prompt']
+            ]
+        ];
+
+        // Si on a des images, format multimodal
+        if (!empty($imageUrls)) {
+            $content = [
+                ['type' => 'text', 'text' => $userPrompt]
+            ];
+
+            foreach ($imageUrls as $imageUrl) {
+                $content[] = [
+                    'type' => 'image_url',
+                    'image_url' => [
+                        'url' => $imageUrl,
+                        'detail' => 'high' // Haute qualité pour bien voir les détails
+                    ]
+                ];
+            }
+
+            $messages[] = [
+                'role' => 'user',
+                'content' => $content
+            ];
+        } else {
+            $messages[] = [
+                'role' => 'user',
+                'content' => $userPrompt
+            ];
+        }
+
+        try {
+            $response = $this->httpClient->post('chat/completions', [
+                'json' => [
+                    'model' => $this->chatModel,
+                    'messages' => $messages,
+                    'response_format' => [
+                        'type' => 'json_schema',
+                        'json_schema' => $promptConfig['json_schema']
+                    ],
+                    'temperature' => 0.2, // Très faible pour cohérence et précision
+                    'max_tokens' => 8000  // Plus de tokens pour devis détaillés
+                ]
+            ]);
+
+            $result = json_decode($response->getBody()->getContents(), true);
+
+            // Extraire le contenu JSON
+            $content = $result['choices'][0]['message']['content'] ?? '';
+            $quoteData = json_decode($content, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \RuntimeException('Réponse OpenAI non valide JSON: ' . json_last_error_msg());
+            }
+
+            // Log du résultat
+            $this->log('INFO', 'Génération devis V2 réussie', [
+                'fournitures_count' => count($quoteData['fournitures'] ?? []),
+                'main_oeuvre_count' => count($quoteData['main_oeuvre'] ?? []),
+                'total_ttc' => $quoteData['totaux']['total_ttc'] ?? 0,
+                'questions_count' => count($quoteData['questions_a_poser'] ?? [])
+            ]);
+
+            return $quoteData;
+
+        } catch (GuzzleException $e) {
+            $this->log('ERROR', 'Erreur génération devis V2', ['error' => $e->getMessage()]);
+            throw new \RuntimeException('Erreur lors de la génération V2 : ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Log structuré pour debug et monitoring
      */
     private function log(string $level, string $message, array $context = []): void

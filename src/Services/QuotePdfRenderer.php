@@ -463,11 +463,8 @@ class QuotePdfRenderer
             border-top: 2px solid {$colorPrimary};
         }
 
-        .totaux .total-ttc {
-            background: {$colorPrimary} !important;
-        }
-
         .totaux .total-ttc td {
+            background: {$colorPrimary} !important;
             color: white;
             font-size: 11pt;
             padding: 10px;

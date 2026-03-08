@@ -294,6 +294,49 @@
                             <div id="imagePreview" class="image-preview"></div>
                         </div>
 
+                        <!-- Toggle V2 (test) -->
+                        <div id="v2ToggleContainer" style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: #F3F4F6; border: 2px solid #D1D5DB; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s;">
+                            <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                                <input type="checkbox" id="useV2Toggle" style="display: none;">
+                                <span id="v2ToggleSwitch" style="width: 50px; height: 26px; background: #9CA3AF; border-radius: 26px; position: relative; transition: background 0.3s; display: inline-block;">
+                                    <span style="content: ''; position: absolute; width: 20px; height: 20px; background: white; border-radius: 50%; top: 3px; left: 3px; transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></span>
+                                </span>
+                                <span style="font-size: 0.875rem; color: #374151;">
+                                    <strong>Mode V2</strong> - IA avec marques & références
+                                </span>
+                            </label>
+                            <span id="v2Status" style="font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 4px; background: #E5E7EB; color: #6B7280;">V1</span>
+                        </div>
+                        <script>
+                        (function() {
+                            const toggle = document.getElementById('useV2Toggle');
+                            const container = document.getElementById('v2ToggleContainer');
+                            const status = document.getElementById('v2Status');
+                            const switchEl = document.getElementById('v2ToggleSwitch');
+                            const ball = switchEl.querySelector('span');
+
+                            toggle.addEventListener('change', function() {
+                                if (this.checked) {
+                                    container.style.background = '#D1FAE5';
+                                    container.style.borderColor = '#10B981';
+                                    switchEl.style.background = '#10B981';
+                                    ball.style.transform = 'translateX(24px)';
+                                    status.textContent = 'V2 ACTIF';
+                                    status.style.background = '#10B981';
+                                    status.style.color = 'white';
+                                } else {
+                                    container.style.background = '#F3F4F6';
+                                    container.style.borderColor = '#D1D5DB';
+                                    switchEl.style.background = '#9CA3AF';
+                                    ball.style.transform = 'translateX(0)';
+                                    status.textContent = 'V1';
+                                    status.style.background = '#E5E7EB';
+                                    status.style.color = '#6B7280';
+                                }
+                            });
+                        })();
+                        </script>
+
                         <!-- Boutons étape 2 -->
                         <div class="step-actions step-actions-between">
                             <button type="button" id="prevStepBtn" class="btn-secondary">
@@ -500,7 +543,7 @@
     <!-- Toast notifications -->
     <div id="toastContainer" class="toast-container"></div>
 
-    <script src="js/config.js?v=5"></script>
-    <script src="js/app.js?v=5"></script>
+    <script src="js/config.js?v=6"></script>
+    <script src="js/app.js?v=6"></script>
 </body>
 </html>

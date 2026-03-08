@@ -758,7 +758,15 @@ async function handleSubmit(e) {
             formData.append('images[]', file);
         });
 
-        const response = await fetch(BASE_PATH + '/api/generate', {
+        // Vérifier si le mode V2 est activé
+        const useV2 = document.getElementById('useV2Toggle')?.checked || false;
+        const apiEndpoint = useV2 ? '/api/generate-v2' : '/api/generate';
+
+        if (useV2) {
+            console.log('[Chiffreo] Mode V2 activé - utilisation du nouveau système multi-agents');
+        }
+
+        const response = await fetch(BASE_PATH + apiEndpoint, {
             method: 'POST',
             headers: Auth.getAuthHeader(),
             body: formData
@@ -768,6 +776,23 @@ async function handleSubmit(e) {
 
         if (!result.success) {
             throw new Error(result.error || 'Erreur lors de la génération');
+        }
+
+        // Transformer le format V2 si nécessaire pour compatibilité
+        if (result.data.quote) {
+            // Debug : toujours afficher
+            console.log('=== DEBUG DEVIS ===');
+            console.log('Version:', result.data.version || 'v1');
+            console.log('Totaux bruts:', result.data.quote.totaux);
+            if (result.data.quote.fournitures) {
+                console.log('Nb fournitures:', result.data.quote.fournitures.length);
+            }
+            if (result.data.quote.parametres_appliques) {
+                console.log('Paramètres appliqués:', result.data.quote.parametres_appliques);
+            }
+            console.log('===================');
+
+            result.data.quote = transformV2ToLegacy(result.data.quote);
         }
 
         state.currentQuote = result.data;
@@ -800,9 +825,75 @@ async function handleSubmit(e) {
     }
 }
 
+// === Transformation format V2 vers format compatible ===
+function transformV2ToLegacy(quote) {
+    // Si c'est déjà le format V1 (a des lignes), ne rien faire
+    if (quote.lignes && !quote.fournitures) {
+        return quote;
+    }
+
+    // Transformer fournitures + main_oeuvre en lignes
+    const lignes = [];
+
+    // Fournitures → catégorie "materiel"
+    (quote.fournitures || []).forEach(f => {
+        lignes.push({
+            designation: f.designation,
+            marque: f.marque,
+            reference: f.reference,
+            categorie: 'materiel',
+            unite: f.unite || 'u',
+            quantite: f.quantite,
+            prix_unitaire_ht: f.prix_vente_unitaire_ht,
+            total_ligne_ht: f.total_ligne_ht,
+            commentaire: f.gamme ? `Gamme: ${f.gamme}` : null
+        });
+    });
+
+    // Main d'oeuvre → catégorie "main_oeuvre"
+    (quote.main_oeuvre || []).forEach(mo => {
+        lignes.push({
+            designation: mo.designation,
+            categorie: 'main_oeuvre',
+            unite: 'h',
+            quantite: mo.heures,
+            prix_unitaire_ht: mo.taux_horaire,
+            total_ligne_ht: mo.total_ligne_ht
+        });
+    });
+
+    // Déplacement → catégorie "forfait"
+    if (quote.deplacement && quote.deplacement.montant_ht > 0) {
+        lignes.push({
+            designation: 'Déplacement' + (quote.deplacement.detail ? ` (${quote.deplacement.detail})` : ''),
+            categorie: 'forfait',
+            unite: 'forfait',
+            quantite: 1,
+            prix_unitaire_ht: quote.deplacement.montant_ht,
+            total_ligne_ht: quote.deplacement.montant_ht
+        });
+    }
+
+    // Transformer totaux
+    const totaux = {
+        total_ht: quote.totaux?.total_ht || 0,
+        taux_tva: quote.totaux?.tva_taux || 20,
+        montant_tva: quote.totaux?.tva_montant || 0,
+        total_ttc: quote.totaux?.total_ttc || 0
+    };
+
+    // Retourner le format compatible
+    return {
+        ...quote,
+        lignes: lignes,
+        totaux: totaux
+    };
+}
+
 // === Affichage des résultats ===
 function renderQuoteResult(data) {
-    const quote = data.quote;
+    // Transformer si format V2
+    const quote = transformV2ToLegacy(data.quote);
 
     // En-tête
     elements.quoteTitle.textContent = quote.chantier?.titre || 'Devis travaux électriques';
@@ -909,6 +1000,31 @@ function renderQuoteResult(data) {
     elements.tauxTVA.textContent = totaux.taux_tva || 20;
     elements.totalTVA.textContent = formatPrice(totaux.montant_tva || 0);
     elements.totalTTC.textContent = formatPrice(totaux.total_ttc || 0);
+
+    // Afficher les paramètres appliqués (V2 uniquement)
+    const paramsAppliques = data.quote?.parametres_appliques;
+    const existingParamsBlock = document.getElementById('paramsAppliquesBlock');
+    if (existingParamsBlock) existingParamsBlock.remove();
+
+    if (paramsAppliques) {
+        console.log('[Chiffreo V2] Paramètres appliqués:', paramsAppliques);
+        const paramsBlock = document.createElement('div');
+        paramsBlock.id = 'paramsAppliquesBlock';
+        paramsBlock.style.cssText = 'margin-top: 1rem; padding: 0.75rem; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; font-size: 0.8rem;';
+        paramsBlock.innerHTML = `
+            <div style="font-weight: 600; color: #1E40AF; margin-bottom: 0.5rem;">📊 Paramètres appliqués (V2)</div>
+            <div style="display: grid; gap: 0.25rem; color: #1E3A5F;">
+                <span>• Taux horaire MO : <strong>${paramsAppliques.taux_horaire_utilise || '?'}€/h</strong></span>
+                <span>• Marge fournitures : <strong>${paramsAppliques.marge_fournitures_pourcent || '?'}%</strong></span>
+                <span>• TVA ${totaux.tva_taux}% : <strong>${paramsAppliques.raison_tva || 'Non précisé'}</strong></span>
+            </div>
+        `;
+        // Insérer après les totaux
+        const totauxSection = elements.totalTTC.closest('.totaux-grid') || elements.totalTTC.parentElement;
+        if (totauxSection) {
+            totauxSection.parentElement.insertBefore(paramsBlock, totauxSection.nextSibling);
+        }
+    }
 
     // Exclusions
     if (quote.exclusions?.length > 0) {

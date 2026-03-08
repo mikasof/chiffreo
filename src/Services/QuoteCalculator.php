@@ -164,7 +164,9 @@ class QuoteCalculator
                 'prix_unitaire_ht' => $prixUnitaireHT,
                 'total_ligne_ht' => $totalLigneHT,
                 'prix_ref_code' => $prixRef,
-                'commentaire' => $ligne['commentaire']
+                'commentaire' => $ligne['commentaire'],
+                'marque' => $ligne['marque'] ?? null,
+                'reference' => $ligne['reference'] ?? null
             ];
 
             // Ajouter les détails si mode debug actif

@@ -325,6 +325,158 @@ class ApiController
     }
 
     /**
+     * POST /api/generate-v2
+     * Génère un devis avec le nouveau système multi-agents
+     * OpenAI gère tout : analyse, normes, matériel, prix avec marques/références
+     */
+    public function generateV2(): void
+    {
+        try {
+            // Rate limiting
+            if (!$this->checkRateLimit('generate')) {
+                return;
+            }
+
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                $this->jsonError('Méthode non autorisée', 405);
+                return;
+            }
+
+            // Authentification optionnelle
+            $user = $this->auth->optionalAuth();
+            $userId = $this->auth->getUserId();
+            $companyId = $this->auth->getCompanyId();
+
+            // Vérifier quota si connecté
+            if ($user) {
+                if (!$this->quotaService->canCreateQuote($user)) {
+                    $this->jsonError('Quota mensuel atteint.', 403);
+                    return;
+                }
+            }
+
+            // Récupérer les données
+            $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+            if (strpos($contentType, 'application/json') !== false) {
+                $input = json_decode(file_get_contents('php://input'), true);
+            } else {
+                $input = $_POST;
+            }
+
+            $description = trim($input['description'] ?? '');
+            $transcription = trim($input['transcription'] ?? '');
+
+            if (empty($description) && empty($transcription)) {
+                $this->jsonError('Description ou transcription requise', 400);
+                return;
+            }
+
+            // Texte combiné
+            $texteComplet = $description;
+            if (!empty($transcription)) {
+                $texteComplet = $description . "\n\n[Transcription audio] " . $transcription;
+            }
+
+            // Images uploadées
+            $imageUrls = [];
+            if (!empty($_FILES['images'])) {
+                $imageUrls = $this->processUploadedImages($_FILES['images']);
+            }
+
+            // Récupérer les paramètres utilisateur pour le prompt
+            $userParams = [];
+            if ($userId) {
+                $userPricing = $this->userRepo->getPricing($userId);
+                $userParams = [
+                    'hourly_rate' => $userPricing['hourly_rate'] ?? 45,
+                    'product_margin' => $userPricing['product_margin'] ?? 20,
+                    'travel_type' => $userPricing['travel_type'] ?? 'fixed',
+                    'travel_fixed_amount' => $userPricing['travel_fixed_amount'] ?? 30,
+                    'travel_per_km' => $userPricing['travel_per_km'] ?? 0.50,
+                    'travel_free_radius' => $userPricing['travel_free_radius'] ?? 20,
+                    'preferred_brand' => $userPricing['preferred_brand'] ?? 'Schneider Electric',
+                ];
+            } else {
+                // Valeurs par défaut pour test sans auth
+                $userParams = [
+                    'hourly_rate' => 45,
+                    'product_margin' => 20,
+                    'travel_type' => 'fixed',
+                    'travel_fixed_amount' => 30,
+                    'preferred_brand' => 'Schneider Electric',
+                ];
+            }
+
+            // Appeler OpenAI avec le nouveau système V2
+            $quoteData = $this->openAI->generateQuoteV2(
+                $texteComplet,
+                $userParams,
+                $imageUrls
+            );
+
+            // Log pour debug
+            $this->logInfo('generate-v2', 'Devis V2 généré', [
+                'fournitures' => count($quoteData['fournitures'] ?? []),
+                'total_ttc' => $quoteData['totaux']['total_ttc'] ?? 0
+            ]);
+
+            // Récupérer données client (optionnel)
+            $clientData = [];
+            if (!empty($input['client'])) {
+                $clientData = is_string($input['client'])
+                    ? json_decode($input['client'], true)
+                    : $input['client'];
+            }
+
+            $clientName = null;
+            if (!empty($clientData)) {
+                $clientName = trim(($clientData['prenom'] ?? '') . ' ' . ($clientData['nom'] ?? ''));
+            }
+
+            // Sauvegarder en BDD
+            $reference = $this->quoteRepo->generateReference();
+            $quoteId = $this->quoteRepo->create([
+                'reference' => $reference,
+                'company_id' => $companyId,
+                'user_id' => $userId,
+                'client_name' => $clientName,
+                'client_email' => $clientData['email'] ?? null,
+                'client_phone' => $clientData['telephone'] ?? null,
+                'titre' => $quoteData['chantier']['titre'] ?? 'Devis travaux électriques',
+                'perimetre' => $quoteData['chantier']['perimetre'] ?? null,
+                'description_originale' => $texteComplet,
+                'transcription_audio' => $transcription ?: null,
+                'ai_response' => $quoteData, // Le JSON complet V2
+                'quote_data' => $quoteData,
+                'total_ht' => $quoteData['totaux']['total_ht'] ?? 0,
+                'total_tva' => $quoteData['totaux']['tva_montant'] ?? 0,
+                'total_ttc' => $quoteData['totaux']['total_ttc'] ?? 0,
+                'taux_tva' => $quoteData['totaux']['tva_taux'] ?? 20.00
+            ]);
+
+            // Incrémenter compteur
+            if ($companyId) {
+                $this->companyRepo->incrementQuoteCount($companyId);
+                if ($userId) {
+                    $this->userRepo->markFirstQuoteDone($userId);
+                }
+            }
+
+            $this->jsonSuccess([
+                'id' => $quoteId,
+                'reference' => $reference,
+                'quote' => $quoteData,
+                'version' => 'v2',
+                'pdf_url' => '/pdf/quote/' . $quoteId
+            ], 201);
+
+        } catch (\Exception $e) {
+            $this->logError('generate-v2', $e->getMessage());
+            $this->jsonError('Erreur génération V2: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * GET /api/quote/{id}
      * Récupère un devis par ID ou référence
      */

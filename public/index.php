@@ -394,6 +394,13 @@ try {
         exit;
     }
 
+    // POST /api/generate-v2 (nouveau système multi-agents)
+    if ($uri === '/api/generate-v2' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $controller = new \App\Controllers\ApiController();
+        $controller->generateV2();
+        exit;
+    }
+
     // GET /api/quotes (liste)
     if ($uri === '/api/quotes' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         $controller = new \App\Controllers\ApiController();
