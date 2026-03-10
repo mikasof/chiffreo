@@ -591,8 +591,8 @@ PROMPT;
                         'type' => 'json_schema',
                         'json_schema' => $promptConfig['json_schema']
                     ],
-                    'temperature' => 0.2, // Très faible pour cohérence et précision
-                    'max_tokens' => 8000  // Plus de tokens pour devis détaillés
+                    'temperature' => 0.7, // Plus élevé comme ChatGPT navigateur
+                    'max_tokens' => 16000  // Beaucoup plus de tokens pour devis complets
                 ]
             ]);
 

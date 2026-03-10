@@ -407,7 +407,7 @@ class ApiController
                 ];
             }
 
-            // Appeler OpenAI avec le nouveau système V2
+            // Appeler OpenAI avec le système V2
             $quoteData = $this->openAI->generateQuoteV2(
                 $texteComplet,
                 $userParams,
