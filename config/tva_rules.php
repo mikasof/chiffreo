@@ -136,9 +136,13 @@ return [
      * Exclusions TVA réduite (toujours 20%)
      */
     'exclusions_tva_reduite' => [
-        'neuf',
         'construction neuve',
         'batiment neuf',
+        'maison neuve',
+        'appartement neuf',
+        'logement neuf',
+        'immeuble neuf',
+        'programme neuf',
         'moins de 2 ans',
         'local commercial',
         'bureau',

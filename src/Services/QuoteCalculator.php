@@ -129,10 +129,16 @@ class QuoteCalculator
                 $prixUnitaireHT = $prixAchatHT * (1 + $productMargin / 100);
                 $details['marge_appliquee'] = $productMargin . '%';
                 $details['prix_vente_ht'] = round($prixUnitaireHT, 2);
-            } elseif ($categorie === 'main_oeuvre' && $userHourlyRate > 0 && $prixRef === 'MO_H') {
-                // Utiliser le taux horaire personnalisé
-                $prixUnitaireHT = $userHourlyRate;
-                $details['taux_horaire_custom'] = true;
+            } elseif ($categorie === 'main_oeuvre' && $userHourlyRate > 0) {
+                if ($prixRef === 'MO_H') {
+                    $prixUnitaireHT = $userHourlyRate;
+                    $details['taux_horaire_custom'] = true;
+                } elseif (in_array($prixRef, ['MO_DEPLACEMENT', 'MO_MISE_EN_SERVICE']) && isset($this->userPricing['rate_' . strtolower($prixRef)])) {
+                    $prixUnitaireHT = (float) $this->userPricing['rate_' . strtolower($prixRef)];
+                    $details['taux_specifique_custom'] = true;
+                } else {
+                    $prixUnitaireHT = $prixPublicHT;
+                }
             } else {
                 // Forfaits et autres : pas de modification
                 $prixUnitaireHT = $prixPublicHT;
