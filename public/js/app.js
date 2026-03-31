@@ -781,18 +781,29 @@ async function handleSubmit(e) {
         // Transformer le format V2 si nécessaire pour compatibilité
         if (result.data.quote) {
             // Debug : toujours afficher
-            console.log('=== DEBUG DEVIS ===');
+            console.log('=== DEBUG DEVIS V2 ===');
             console.log('Version:', result.data.version || 'v1');
             console.log('Totaux bruts:', result.data.quote.totaux);
-            if (result.data.quote.fournitures) {
-                console.log('Nb fournitures:', result.data.quote.fournitures.length);
-            }
+            console.log('Nb tâches:', (result.data.quote.taches || []).length);
+            console.log('Tâches:', result.data.quote.taches);
+            console.log('Nb fournitures:', (result.data.quote.fournitures || []).length);
+            console.log('Fournitures:', result.data.quote.fournitures);
+            console.log('Nb main_oeuvre:', (result.data.quote.main_oeuvre || []).length);
+            console.log('Main oeuvre:', result.data.quote.main_oeuvre);
             if (result.data.quote.parametres_appliques) {
                 console.log('Paramètres appliqués:', result.data.quote.parametres_appliques);
             }
-            console.log('===================');
+            console.log('======================');
 
             result.data.quote = transformV2ToLegacy(result.data.quote);
+
+            console.log('=== APRÈS TRANSFORMATION ===');
+            console.log('Nb lignes:', (result.data.quote.lignes || []).length);
+            console.log('Lignes par catégorie:');
+            const cats = { materiel: 0, main_oeuvre: 0, forfait: 0 };
+            (result.data.quote.lignes || []).forEach(l => cats[l.categorie] = (cats[l.categorie] || 0) + 1);
+            console.log(cats);
+            console.log('============================');
         }
 
         state.currentQuote = result.data;

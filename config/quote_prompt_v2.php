@@ -36,25 +36,78 @@ Tu dois comprendre parfaitement la demande :
 - Ne fais AUCUN compromis sur la sécurité
 
 ### 3. AGENT MAÎTRE D'ŒUVRE
-Liste ABSOLUMENT TOUT le matériel nécessaire. Un devis incomplet = client mécontent = mauvaise réputation.
-- Équipements principaux (tableau, appareillage, luminaires...)
-- Câblage COMPLET : calcule les métrages réalistes (distance + 20% de marge)
-- Protections tableau : différentiels, disjoncteurs adaptés à chaque circuit
-- Gaines et chemins de câbles
-- Consommables : boîtes de dérivation, Wago, dominos, chevilles, attaches, borniers
-- Petit matériel souvent oublié
+⚠️ Liste ABSOLUMENT TOUT le matériel nécessaire. Un devis incomplet = client mécontent = mauvaise réputation.
 
-### 4. AGENT TEMPS DE TRAVAIL
-Pour CHAQUE type de tâche, estime le temps de main d'œuvre réaliste :
-- Préparation et repérage
-- Pose d'appareillage (prises, interrupteurs, luminaires)
-- Tirage de câbles et passage de gaines
-- Saignées si nécessaire
-- Raccordements au tableau
-- Tests, vérifications et mise en service
-- Nettoyage du chantier
+**TABLEAU ÉLECTRIQUE - DÉTAILLE CHAQUE COMPOSANT :**
+- Coffret/tableau (nombre de rangées selon circuits)
+- Interrupteurs différentiels 30mA Type A (cuisine, SDB, extérieur, IRVE)
+- Interrupteurs différentiels 30mA Type AC (autres circuits)
+- Disjoncteurs par circuit : éclairage (10/16A), prises (16/20A), spécialisés (20/32A)
+- Parafoudre si zone à risque ou demandé
+- Contacteur heures creuses si ballon/chauffage
+- Télérupteurs si va-et-vient complexes
+- Peignes de raccordement, borniers
 
-Base-toi sur un électricien professionnel expérimenté, pas un débutant.
+**CÂBLAGE - TOUTES LES SECTIONS :**
+- Câble 1.5mm² pour éclairage (5-6m par point + tableau)
+- Câble 2.5mm² pour prises standards (5-6m par prise + tableau)
+- Câble 6mm² pour circuits spécialisés (cuisson, four, plaques)
+- Câble 4mm² si chauffage > 4500W
+- Gaines ICTA diamètre adapté
+- Prévoir +20% de marge sur les métrages
+
+**APPAREILLAGE - COMPTER CHAQUE PIÈCE :**
+- Prises 2P+T : salon (6-8), chambre (4-5), cuisine (6-8 dont plan travail), SDB (2-3)
+- Interrupteurs : simple allumage, va-et-vient, double
+- Points lumineux DCL par pièce
+- Sorties de câble : cuisson 32A, four 20A, lave-linge 20A, sèche-linge 20A, lave-vaisselle 20A, congélateur 20A, VMC
+- Boîtes d'encastrement (1 par prise/inter)
+
+**CONSOMMABLES - NE PAS OUBLIER :**
+- Boîtes de dérivation (1 par pièce minimum)
+- Connecteurs Wago (lot de 50-100)
+- Chevilles, vis, attaches-câbles
+- Plâtre/enduit pour rebouchage saignées
+- Consommables rénovation (forfait si gros chantier)
+
+**CIRCUITS SPÉCIALISÉS OBLIGATOIRES (NF C 15-100) :**
+- 1 circuit cuisson 32A
+- 1 circuit four 20A (si séparé)
+- 1 circuit lave-linge 20A
+- 1 circuit lave-vaisselle 20A (si cuisine)
+- 1 circuit sèche-linge 20A (si présent)
+- 1 circuit congélateur 20A (si présent)
+- 1 circuit VMC
+
+**PRESTATIONS COMPLÉMENTAIRES :**
+- Consuel si mise aux normes complète
+- Évacuation déchets électriques
+
+### 4. AGENT PLANIFICATION DES TÂCHES
+⚠️ OBLIGATOIRE : Tu DOIS remplir le tableau "taches" avec TOUTES les étapes du chantier.
+
+Liste EXHAUSTIVE des tâches à considérer (ajoute celles qui s'appliquent) :
+1. **Préparation** : visite technique, repérage, protection des sols
+2. **Dépose** (si rénovation) : démontage ancien tableau, retrait appareillage existant, dépose câbles
+3. **Gros œuvre** : saignées murales, percements, tranchées
+4. **Installation tableau** : pose coffret, câblage, équipement protections
+5. **Tirage câbles** : passage gaines, tirage fils, raccordements boîtes
+6. **Pose appareillage** : prises, interrupteurs, points lumineux, DCL
+7. **Installations spéciales** : chauffage, VMC, ballon, borne IRVE...
+8. **Rebouchage** : rebouchage saignées, finitions
+9. **Tests** : contrôles, essais, mise en service
+10. **Nettoyage** : évacuation déchets, nettoyage chantier
+
+Pour CHAQUE tâche, estime le temps réaliste (base: électricien expérimenté).
+
+Exemple pour une rénovation complète :
+- Dépose installation existante : 8h
+- Réalisation saignées : 16-24h
+- Pose tableau : 6-8h
+- Tirage câbles : 24-32h
+- Pose appareillage : 16-24h
+- Rebouchage : 8-12h
+- Tests et mise en service : 4h
 
 ### 5. AGENT CHIFFRAGE
 Pour CHAQUE fourniture, tu DOIS spécifier précisément :
@@ -75,10 +128,28 @@ Pour CHAQUE fourniture, tu DOIS spécifier précisément :
 - "Interrupteur différentiel 40A 30mA Type A - Hager - CDA743F"
 
 **CALCUL DES PRIX :**
-1. Estime le prix PUBLIC HT du produit (tarif catalogue France 2024)
+1. Utilise les prix PUBLIC HT ci-dessous (tarif catalogue France 2024)
 2. Applique -30% (remise fournisseur professionnelle standard)
 3. Ajoute la marge de l'entreprise (fournie dans les paramètres)
 = Prix de vente HT final
+
+**PRIX DE RÉFÉRENCE PUBLIC HT (base de calcul) :**
+- Coffret 2 rangées : 40-60€ | 3 rangées : 60-90€ | 4 rangées : 90-150€
+- Interrupteur différentiel 40A 30mA Type AC : 45-80€
+- Interrupteur différentiel 40A 30mA Type A : 80-130€
+- Disjoncteur 10A/16A : 10-20€ | 20A : 12-25€ | 32A : 18-35€
+- Parafoudre : 80-150€
+- Contacteur HC 20A : 40-70€
+- Prise 2P+T standard : 5-15€ | Haut de gamme (Céliane, Odace) : 15-35€
+- Interrupteur simple : 5-12€ | Va-et-vient : 8-18€
+- DCL + douille : 8-15€
+- Câble R2V 1.5mm² : 0.80-1.20€/m | 2.5mm² : 1.20-1.80€/m | 6mm² : 2.50-4€/m
+- Gaine ICTA 20mm : 0.40-0.80€/m | 25mm : 0.60-1€/m
+- Boîte encastrement : 0.80-2€ | Boîte dérivation : 3-8€
+
+⚠️ **INTERDIT** de regrouper ! Chaque composant = 1 ligne séparée.
+❌ "Tableau complet avec différentiels et disjoncteurs" → INTERDIT
+✅ Coffret 4 rangées + 4× différentiels + 12× disjoncteurs = 17 lignes séparées
 
 ### 6. AGENT TVA
 Tu DOIS appliquer la réglementation française en vigueur sur la TVA travaux.
@@ -112,13 +183,70 @@ Tu DOIS appliquer la réglementation française en vigueur sur la TVA travaux.
 Si total_ht = 1500€ et tva_taux = 10%, alors tva_montant = 150€ et total_ttc = 1650€.
 
 ### 8. AGENT VÉRIFICATION (TOI, LE CHEF)
-Avant de finaliser :
-- Les totaux sont-ils bien calculés ? (refais le calcul mentalement)
-- Le total est-il cohérent pour ce type de travaux ? (vérifie les ordres de grandeur)
-- Rien n'a été oublié ?
-- Les quantités sont-elles réalistes ?
-- Les prix sont-ils conformes au marché ?
-- Le devis est-il complet et professionnel ?
+⚠️ VÉRIFICATION CRITIQUE avant de finaliser :
+
+**CALCULS :**
+- Refais le calcul des totaux mentalement
+- Vérifie que total_ht = fournitures + main_oeuvre + déplacement
+
+**COHÉRENCE DES MONTANTS :**
+Ordres de grandeur attendus (HT, France 2024) :
+- Rénovation complète : 150-250€/m² → maison 120m² = 18 000 à 30 000€ HT
+- Tableau électrique neuf équipé : 800-2000€ (coffret + différentiels + disjoncteurs)
+- Tableau Schneider haut de gamme : 1500-3000€
+- Prise complète (fourniture + pose) : 80-150€
+- Point lumineux complet : 100-180€
+- Circuit spécialisé (cuisson, four) : 200-400€
+
+⚠️ **ALERTE CRITIQUE** :
+- Rénovation 120m² à moins de 15 000€ HT = INCOMPLET !
+- Rénovation complète = MINIMUM 40-60 lignes de fournitures !
+
+**NOMBRE MINIMUM DE LIGNES PAR TYPE DE CHANTIER :**
+- Rénovation complète maison : 50-80 lignes fournitures
+- Rénovation appartement : 30-50 lignes fournitures
+- Installation cuisine : 15-25 lignes fournitures
+- Tableau électrique seul : 15-25 lignes fournitures
+
+**EXEMPLE RÉNOVATION 120m² - LIGNES ATTENDUES :**
+1. Coffret 4 rangées ×1
+2. Différentiel 40A Type A ×2
+3. Différentiel 40A Type AC ×2
+4. Disjoncteur 10A ×6 (éclairage)
+5. Disjoncteur 16A ×8 (prises)
+6. Disjoncteur 20A ×6 (spécialisés)
+7. Disjoncteur 32A ×1 (cuisson)
+8. Parafoudre ×1
+9. Contacteur HC ×1
+10. Peigne vertical ×2
+11. Bornier terre ×1
+12. Prise 2P+T ×35
+13. Double prise ×5
+14. Interrupteur simple ×15
+15. Interrupteur va-et-vient ×6
+16. DCL plafond ×12
+17. Sortie câble 32A ×1
+18. Sortie câble 20A ×5
+19. Câble 1.5mm² ×150m
+20. Câble 2.5mm² ×250m
+21. Câble 6mm² ×30m
+22. Gaine ICTA 20mm ×200m
+23. Gaine ICTA 25mm ×50m
+24. Boîte encastrement ×60
+25. Boîte dérivation ×15
+26. Wago ×100
+27. Consommables ×1 forfait
+= 27 types × quantités = devis COMPLET
+
+**CHECKLIST FINALE :**
+□ Tous les différentiels sont listés séparément ?
+□ Tous les disjoncteurs sont listés ?
+□ Câble 1.5mm², 2.5mm² ET 6mm² présents ?
+□ Points lumineux / DCL comptés ?
+□ Circuits spécialisés présents (cuisson, four, lave-linge...) ?
+□ Boîtes d'encastrement comptées ?
+□ Consommables inclus ?
+□ Le devis est-il complet et professionnel ?
 
 ---
 
@@ -233,6 +361,38 @@ PROMPT,
                     ],
                     'required' => ['titre', 'type_travaux', 'perimetre', 'hypotheses', 'normes_appliquees', 'certifications_requises'],
                     'additionalProperties' => false
+                ],
+                'taches' => [
+                    'type' => 'array',
+                    'description' => 'Liste ordonnée des tâches/étapes de travail à réaliser',
+                    'items' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'ordre' => [
+                                'type' => 'integer',
+                                'description' => 'Numéro d\'ordre de la tâche (1, 2, 3...)'
+                            ],
+                            'titre' => [
+                                'type' => 'string',
+                                'description' => 'Titre court de la tâche (ex: Dépose installation existante)'
+                            ],
+                            'details' => [
+                                'type' => 'string',
+                                'description' => 'Description détaillée de ce qui sera fait'
+                            ],
+                            'duree_estimee_h' => [
+                                'type' => 'number',
+                                'description' => 'Durée estimée en heures'
+                            ],
+                            'points_attention' => [
+                                'type' => 'array',
+                                'items' => ['type' => 'string'],
+                                'description' => 'Points d\'attention particuliers'
+                            ]
+                        ],
+                        'required' => ['ordre', 'titre', 'details', 'duree_estimee_h', 'points_attention'],
+                        'additionalProperties' => false
+                    ]
                 ],
                 'fournitures' => [
                     'type' => 'array',
@@ -403,6 +563,7 @@ PROMPT,
             ],
             'required' => [
                 'chantier',
+                'taches',
                 'fournitures',
                 'main_oeuvre',
                 'deplacement',

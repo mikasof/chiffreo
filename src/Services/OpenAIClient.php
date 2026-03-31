@@ -16,6 +16,7 @@ class OpenAIClient
     private string $baseUrl = 'https://api.openai.com/v1/';
     private NormsService $normsService;
     private ?ProductSearchService $productSearchService = null;
+    private MaterialEstimator $materialEstimator;
 
     // Modèles recommandés
     private string $transcriptionModel = 'whisper-1';
@@ -38,6 +39,7 @@ class OpenAIClient
         ]);
 
         $this->normsService = new NormsService();
+        $this->materialEstimator = new MaterialEstimator();
 
         // Initialiser le service de recherche de produits avec la BDD si disponible
         if ($db !== null) {
@@ -506,10 +508,11 @@ PROMPT;
     }
 
     /**
-     * GÉNÉRATION DEVIS V2 - Système multi-agents délégué à OpenAI
+     * GÉNÉRATION DEVIS V2 - Système hybride : calcul PHP + validation IA
      *
-     * Nouvelle approche : OpenAI gère tout en interne avec ses connaissances métier.
-     * On injecte uniquement les paramètres business de l'utilisateur.
+     * Pour les rénovations complètes (>50m²), utilise le MaterialEstimator PHP
+     * pour garantir un devis complet et des prix cohérents.
+     * Pour les autres cas, utilise OpenAI.
      *
      * @param string $description Description ou transcription du chantier
      * @param array $userParams Paramètres de l'utilisateur (hourly_rate, product_margin, travel_type, etc.)
@@ -526,6 +529,44 @@ PROMPT;
             'images_count' => count($imageUrls),
             'user_params' => array_keys($userParams)
         ]);
+
+        // === ÉTAPE 1 : Analyse de la description ===
+        $parsedParams = $this->materialEstimator->parseDescription($description);
+
+        $this->log('INFO', 'Paramètres détectés', [
+            'surface' => $parsedParams['surface'],
+            'type' => $parsedParams['type'],
+            'nb_pieces' => count($parsedParams['pieces']),
+            'gamme' => $parsedParams['gamme'],
+            'options' => $parsedParams['options']
+        ]);
+
+        // === ÉTAPE 2 : Pour rénovations complètes (>50m²), utiliser le calculateur PHP ===
+        if ($parsedParams['type'] === 'renovation_complete' && $parsedParams['surface'] >= 50) {
+            $this->log('INFO', 'Utilisation du calculateur PHP (rénovation complète détectée)');
+
+            $quoteData = $this->materialEstimator->calculerDevis($parsedParams);
+
+            $this->log('INFO', 'Devis calculé par PHP', [
+                'fournitures_count' => count($quoteData['fournitures']),
+                'main_oeuvre_count' => count($quoteData['main_oeuvre']),
+                'taches_count' => count($quoteData['taches']),
+                'total_ttc' => $quoteData['totaux']['total_ttc']
+            ]);
+
+            // Ajouter des questions pertinentes
+            $quoteData['questions_a_poser'] = [
+                'Quel type de tableau existant (monophasé/triphasé) ?',
+                'Y a-t-il un accès aux combles pour le passage des câbles ?',
+                'Les murs sont-ils en placo, brique ou béton ?',
+                'Souhaitez-vous des prises USB intégrées ?'
+            ];
+
+            return $quoteData;
+        }
+
+        // === ÉTAPE 3 : Pour les autres cas, utiliser OpenAI ===
+        $this->log('INFO', 'Utilisation de OpenAI (cas non-rénovation ou petite surface)');
 
         // Charger la configuration du prompt V2
         $promptConfig = require __DIR__ . '/../../config/quote_prompt_v2.php';
@@ -606,10 +647,22 @@ PROMPT;
                 throw new \RuntimeException('Réponse OpenAI non valide JSON: ' . json_last_error_msg());
             }
 
-            // Log du résultat
-            $this->log('INFO', 'Génération devis V2 réussie', [
+            // Log du premier résultat
+            $this->log('INFO', 'Génération devis V2 - première passe', [
                 'fournitures_count' => count($quoteData['fournitures'] ?? []),
                 'main_oeuvre_count' => count($quoteData['main_oeuvre'] ?? []),
+                'taches_count' => count($quoteData['taches'] ?? []),
+                'total_ttc' => $quoteData['totaux']['total_ttc'] ?? 0
+            ]);
+
+            // === ÉTAPE 2 : VÉRIFICATION ET COMPLÉMENT ===
+            $quoteData = $this->verifyAndCompleteQuote($quoteData, $description, $promptConfig, $userParams);
+
+            // Log du résultat final
+            $this->log('INFO', 'Génération devis V2 réussie (après vérification)', [
+                'fournitures_count' => count($quoteData['fournitures'] ?? []),
+                'main_oeuvre_count' => count($quoteData['main_oeuvre'] ?? []),
+                'taches_count' => count($quoteData['taches'] ?? []),
                 'total_ttc' => $quoteData['totaux']['total_ttc'] ?? 0,
                 'questions_count' => count($quoteData['questions_a_poser'] ?? [])
             ]);
@@ -619,6 +672,152 @@ PROMPT;
         } catch (GuzzleException $e) {
             $this->log('ERROR', 'Erreur génération devis V2', ['error' => $e->getMessage()]);
             throw new \RuntimeException('Erreur lors de la génération V2 : ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Vérifie et complète le devis généré en demandant à l'IA de relire
+     *
+     * @param array $quoteData Le devis initial
+     * @param string $description La demande client originale
+     * @param array $promptConfig Configuration du prompt
+     * @param array $userParams Paramètres utilisateur
+     * @return array Le devis vérifié et complété
+     */
+    private function verifyAndCompleteQuote(array $quoteData, string $description, array $promptConfig, array $userParams): array
+    {
+        $this->log('INFO', 'Début vérification devis V2');
+
+        $verificationPrompt = <<<PROMPT
+Tu es un VÉRIFICATEUR DE DEVIS ÉLECTRICIEN expert.
+
+## DEMANDE CLIENT ORIGINALE :
+{$description}
+
+## DEVIS GÉNÉRÉ (à vérifier) :
+
+### Tâches prévues :
+PROMPT;
+
+        // Ajouter les tâches actuelles
+        foreach ($quoteData['taches'] ?? [] as $tache) {
+            $verificationPrompt .= "\n- {$tache['titre']} ({$tache['duree_estimee_h']}h)";
+        }
+
+        $verificationPrompt .= "\n\n### Fournitures :";
+        foreach ($quoteData['fournitures'] ?? [] as $f) {
+            $verificationPrompt .= "\n- {$f['designation']} x{$f['quantite']} {$f['unite']}";
+        }
+
+        $verificationPrompt .= "\n\n### Main d'œuvre :";
+        foreach ($quoteData['main_oeuvre'] ?? [] as $mo) {
+            $verificationPrompt .= "\n- {$mo['designation']} ({$mo['heures']}h)";
+        }
+
+        $verificationPrompt .= <<<PROMPT
+
+
+### Total actuel : {$quoteData['totaux']['total_ttc']}€ TTC
+
+---
+
+## TA MISSION DE VÉRIFICATION :
+
+Relis attentivement la demande client ET le devis généré. Vérifie que RIEN n'a été oublié :
+
+1. **TÂCHES** : Toutes les étapes de travail sont-elles listées ?
+   - Dépose/démontage si rénovation ?
+   - Saignées si encastré ?
+   - Rebouchage après saignées ?
+   - Tests et mise en service ?
+   - Nettoyage de chantier ?
+
+2. **MATÉRIEL** : Tout le matériel est-il présent ?
+   - Tableau et protections (différentiels, disjoncteurs) ?
+   - Câbles en quantité suffisante (prévoir +20% de marge) ?
+   - Gaines ICTA ?
+   - Appareillage (prises, interrupteurs, DCL) ?
+   - Consommables (Wago, chevilles, boîtes, etc.) ?
+
+3. **MAIN D'ŒUVRE** : Tous les temps sont-ils comptés ?
+   - Préparation/repérage ?
+   - Pose du matériel ?
+   - Tirage de câbles ?
+   - Raccordements ?
+   - Tests ?
+
+4. **PRESTATIONS ANNEXES** :
+   - Déplacement ?
+   - Mise en service ?
+   - Consuel si nécessaire ?
+   - Évacuation des déchets ?
+
+## RÉPONSE ATTENDUE :
+
+Retourne le devis COMPLET au format JSON avec :
+- Les tâches manquantes AJOUTÉES
+- Les lignes manquantes AJOUTÉES
+- Les totaux RECALCULÉS
+
+Si le devis est déjà complet, retourne-le tel quel avec les totaux vérifiés.
+PROMPT;
+
+        try {
+            $response = $this->httpClient->post('chat/completions', [
+                'json' => [
+                    'model' => $this->chatModel,
+                    'messages' => [
+                        [
+                            'role' => 'system',
+                            'content' => $promptConfig['system_prompt']
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => $verificationPrompt
+                        ]
+                    ],
+                    'response_format' => [
+                        'type' => 'json_schema',
+                        'json_schema' => $promptConfig['json_schema']
+                    ],
+                    'temperature' => 0.3, // Plus bas pour être plus précis en vérification
+                    'max_tokens' => 16000
+                ]
+            ]);
+
+            $result = json_decode($response->getBody()->getContents(), true);
+            $content = $result['choices'][0]['message']['content'] ?? '';
+            $verifiedData = json_decode($content, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->log('WARNING', 'Vérification devis: réponse JSON invalide, on garde l\'original');
+                return $quoteData;
+            }
+
+            // Log des changements
+            $fournituresAvant = count($quoteData['fournitures'] ?? []);
+            $fournituresApres = count($verifiedData['fournitures'] ?? []);
+            $moAvant = count($quoteData['main_oeuvre'] ?? []);
+            $moApres = count($verifiedData['main_oeuvre'] ?? []);
+            $tachesAvant = count($quoteData['taches'] ?? []);
+            $tachesApres = count($verifiedData['taches'] ?? []);
+
+            $this->log('INFO', 'Vérification devis terminée', [
+                'fournitures_avant' => $fournituresAvant,
+                'fournitures_apres' => $fournituresApres,
+                'mo_avant' => $moAvant,
+                'mo_apres' => $moApres,
+                'taches_avant' => $tachesAvant,
+                'taches_apres' => $tachesApres,
+                'total_avant' => $quoteData['totaux']['total_ttc'] ?? 0,
+                'total_apres' => $verifiedData['totaux']['total_ttc'] ?? 0
+            ]);
+
+            return $verifiedData;
+
+        } catch (GuzzleException $e) {
+            $this->log('WARNING', 'Erreur vérification devis, on garde l\'original', ['error' => $e->getMessage()]);
+            return $quoteData; // En cas d'erreur, on retourne le devis original
         }
     }
 
