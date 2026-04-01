@@ -3,12 +3,13 @@
  * Cache basique pour fonctionnement offline
  */
 
-const CACHE_NAME = 'chiffreo-v4';
-const BASE_PATH = '/chiffreo/public';
+const CACHE_NAME = 'chiffreo-v6';
+// Production: BASE_PATH vide, Local: '/chiffreo/public'
+const BASE_PATH = '';
 
 const STATIC_ASSETS = [
     BASE_PATH + '/',
-    BASE_PATH + '/index.html',
+    BASE_PATH + '/app',
     BASE_PATH + '/css/app.css',
     BASE_PATH + '/js/app.js',
     BASE_PATH + '/manifest.json'
@@ -48,6 +49,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
+
+    // Ignorer les requêtes non-HTTP (chrome-extension://, etc.)
+    if (!url.protocol.startsWith('http')) {
+        return;
+    }
 
     // API calls - toujours réseau
     if (url.pathname.includes('/api/') || url.pathname.includes('/pdf/')) {
@@ -89,7 +95,7 @@ self.addEventListener('fetch', (event) => {
                         }
                         // Fallback pour la page principale
                         if (request.mode === 'navigate') {
-                            return caches.match(BASE_PATH + '/');
+                            return caches.match(BASE_PATH + '/app');
                         }
                         return new Response('Ressource non disponible hors ligne', {
                             status: 503

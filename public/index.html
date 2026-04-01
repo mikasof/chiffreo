@@ -9,8 +9,8 @@
     <title>Chiffreo - Devis Électrique IA</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icons/logo_chiffreo.png">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/logo_chiffreo.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -22,7 +22,7 @@
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
 
-    <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
     <div id="app">
@@ -30,14 +30,14 @@
         <div id="trial-banner" class="trial-banner">
             <i class="ph ph-crown"></i>
             <span>Essai Pro : <strong class="trial-days">14</strong> jours restants</span>
-            <a href="./#tarifs" class="trial-link">Voir les offres</a>
+            <a href="/#tarifs" class="trial-link">Voir les offres</a>
         </div>
 
         <!-- Header -->
         <header class="header">
             <div class="header-content">
-                <a href="./" class="logo">
-                    <img src="icons/logo_chiffreo.png" alt="Chiffreo" class="logo-img">
+                <a href="/" class="logo">
+                    <img src="/icons/logo_chiffreo.png" alt="Chiffreo" class="logo-img">
                     <span>Chiffreo</span>
                 </a>
 
@@ -64,11 +64,11 @@
                             <i class="ph ph-caret-down"></i>
                         </button>
                         <div class="user-dropdown">
-                            <a id="settings-link" href="settings.html" class="dropdown-item">
+                            <a id="settings-link" href="/settings" class="dropdown-item">
                                 <i class="ph ph-gear"></i>
                                 <span>Paramètres</span>
                             </a>
-                            <a id="quotes-link" href="settings.html#quotes" class="dropdown-item">
+                            <a id="quotes-link" href="/settings#quotes" class="dropdown-item">
                                 <i class="ph ph-files"></i>
                                 <span>Mes devis</span>
                             </a>
@@ -459,8 +459,8 @@
         <footer class="footer">
             <p>Chiffreo &copy; 2026 &mdash; Propulsé par MSConseil</p>
             <div class="footer-links">
-                <a href="confidentialite.html">Politique de confidentialité</a>
-                <a href="mentions-legales.html">Mentions légales</a>
+                <a href="/confidentialite">Politique de confidentialité</a>
+                <a href="/mentions-legales">Mentions légales</a>
             </div>
         </footer>
     </div>
@@ -543,7 +543,7 @@
     <!-- Toast notifications -->
     <div id="toastContainer" class="toast-container"></div>
 
-    <script src="js/config.js?v=6"></script>
-    <script src="js/app.js?v=6"></script>
+    <script src="/js/config.js?v=6"></script>
+    <script src="/js/app.js?v=6"></script>
 </body>
 </html>

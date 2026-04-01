@@ -12,12 +12,12 @@
     <meta property="og:title" content="Chiffreo — Parlez, c'est chiffré">
     <meta property="og:description" content="L'app qui transforme votre voix en devis professionnel. Pour les électriciens et pros du bâtiment.">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="icons/og-image.png">
+    <meta property="og:image" content="/icons/og-image.png">
 
     <!-- PWA -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icons/logo_chiffreo.png">
-    <link rel="icon" type="image/png" href="icons/logo_chiffreo.png">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/logo_chiffreo.png">
+    <link rel="icon" type="image/png" href="/icons/logo_chiffreo.png">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,25 +27,25 @@
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
 
-    <link rel="stylesheet" href="css/landing.css">
+    <link rel="stylesheet" href="/css/landing.css">
 </head>
 <body>
     <!-- Navigation -->
     <nav class="nav">
         <div class="nav-container">
-            <a href="./" class="nav-logo">
-                <img src="icons/logo_chiffreo.png" alt="Chiffreo" class="nav-logo-img">
+            <a href="/" class="nav-logo">
+                <img src="/icons/logo_chiffreo.png" alt="Chiffreo" class="nav-logo-img">
                 <span>Chiffreo</span>
             </a>
             <div class="nav-links">
                 <a href="#fonctionnement" class="nav-link">Comment ça marche</a>
                 <a href="#avantages" class="nav-link">Avantages</a>
                 <a href="#tarifs" class="nav-link">Tarifs</a>
-                <a id="auth-link" href="auth" class="nav-link nav-login">
+                <a id="auth-link" href="/auth" class="nav-link nav-login">
                     <i class="ph ph-user"></i>
                     <span>Connexion</span>
                 </a>
-                <a href="auth?tab=register" class="nav-cta">
+                <a href="/auth?tab=register" class="nav-cta">
                     Essai gratuit
                     <i class="ph ph-arrow-right"></i>
                 </a>
@@ -72,7 +72,7 @@
                 </p>
 
                 <div class="hero-cta-group">
-                    <a href="auth?tab=register" class="btn-cta-primary">
+                    <a href="/auth?tab=register" class="btn-cta-primary">
                         <i class="ph ph-play-circle"></i>
                         Essai gratuit 14 jours
                     </a>
@@ -218,7 +218,7 @@
             </div>
 
             <div class="section-cta">
-                <a href="auth?tab=register" class="btn-cta-secondary">
+                <a href="/auth?tab=register" class="btn-cta-secondary">
                     Essayer gratuitement
                     <i class="ph ph-arrow-right"></i>
                 </a>
@@ -350,7 +350,7 @@
                         </li>
                     </ul>
                     <div class="pricing-cta">
-                        <a href="auth?tab=register" class="btn-pricing-secondary">
+                        <a href="/auth?tab=register" class="btn-pricing-secondary">
                             Créer mon compte
                         </a>
                         <p class="pricing-note">Sans carte bancaire</p>
@@ -408,7 +408,7 @@
                         </li>
                     </ul>
                     <div class="pricing-cta">
-                        <a href="auth?tab=register" class="btn-pricing-primary">
+                        <a href="/auth?tab=register" class="btn-pricing-primary">
                             Essai gratuit 14 jours
                         </a>
                         <p class="pricing-note">Sans carte bancaire • Sans engagement</p>
@@ -459,7 +459,7 @@
                     </ul>
                     <p class="pricing-extra">+8 €/mois par utilisateur supplémentaire</p>
                     <div class="pricing-cta">
-                        <a href="auth?tab=register" class="btn-pricing-secondary">
+                        <a href="/auth?tab=register" class="btn-pricing-secondary">
                             Essai gratuit 14 jours
                         </a>
                         <p class="pricing-note">Sans carte bancaire</p>
@@ -475,7 +475,7 @@
             <div class="final-cta-content">
                 <h2>Prêt à gagner du temps ?</h2>
                 <p>Rejoignez les professionnels qui chiffrent leurs chantiers en 2 minutes</p>
-                <a href="auth?tab=register" class="btn-cta-primary btn-large">
+                <a href="/auth?tab=register" class="btn-cta-primary btn-large">
                     <i class="ph ph-play-circle"></i>
                     Essai gratuit 14 jours
                 </a>
@@ -487,12 +487,12 @@
     <footer class="footer">
         <div class="footer-container">
             <div class="footer-brand">
-                <img src="icons/logo_chiffreo.png" alt="Chiffreo" class="footer-logo">
+                <img src="/icons/logo_chiffreo.png" alt="Chiffreo" class="footer-logo">
                 <span>Chiffreo</span>
             </div>
             <div class="footer-links">
-                <a href="mentions-legales.html">Mentions légales</a>
-                <a href="confidentialite.html">Confidentialité</a>
+                <a href="/mentions-legales">Mentions légales</a>
+                <a href="/confidentialite">Confidentialité</a>
             </div>
             <p class="footer-copy">© 2026 Chiffreo — Propulsé par MSConseil</p>
         </div>
@@ -572,7 +572,7 @@
         if (token) {
             // Utilisateur connecté
             authLink.innerHTML = '<i class="ph ph-user-circle"></i><span>Mon compte</span>';
-            authLink.href = 'settings';
+            authLink.href = '/settings';
             authLink.classList.add('logged-in');
         }
     })();
