@@ -9,11 +9,11 @@
     <title>Bienvenue - Chiffreo</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/icons/favicon.png">
-    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" href="icons/favicon.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,13 +24,13 @@
     <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
 
     <!-- Styles -->
-    <link rel="stylesheet" href="/css/onboarding.css">
+    <link rel="stylesheet" href="css/onboarding.css">
 </head>
 <body>
     <!-- Progress Header -->
     <header class="onboarding-header">
         <a href="/" class="header-logo">
-            <img src="/icons/logo_chiffreo.png" alt="Chiffreo" height="28">
+            <img src="icons/logo_chiffreo.png" alt="Chiffreo" height="28">
         </a>
         <div class="progress-container">
             <div class="progress-bar">
@@ -390,8 +390,20 @@
         <span>Essai Pro : <strong id="trial-days">14</strong> jours restants</span>
     </div>
 
-    <script src="/js/config.js?v=4"></script>
-    <script src="/js/auth.js?v=4"></script>
-    <script src="/js/onboarding.js?v=4"></script>
+    <script src="js/config.js?v=4"></script>
+    <script src="js/auth.js?v=4"></script>
+    <script src="js/onboarding.js?v=4"></script>
+    <script>
+    (function() {
+        var basePath = (window.CHIFFREO_CONFIG && window.CHIFFREO_CONFIG.BASE_PATH) || "";
+        if (!basePath) return;
+        document.querySelectorAll('a[href^="/"]').forEach(function(link) {
+            var href = link.getAttribute("href");
+            if (href && href.indexOf("//") !== 0 && href.indexOf(basePath) !== 0) {
+                link.setAttribute("href", basePath + href);
+            }
+        });
+    })();
+    </script>
 </body>
 </html>

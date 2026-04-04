@@ -110,10 +110,10 @@ class QuoteRepository
     {
         $sql = "INSERT INTO quote_items (
             quote_id, designation, categorie, unite, quantite,
-            prix_unitaire_ht, total_ht, prix_ref_code, commentaire, ordre
+            prix_unitaire_ht, total_ht, taux_tva, prix_ref_code, commentaire, ordre
         ) VALUES (
             :quote_id, :designation, :categorie, :unite, :quantite,
-            :prix_unitaire_ht, :total_ht, :prix_ref_code, :commentaire, :ordre
+            :prix_unitaire_ht, :total_ht, :taux_tva, :prix_ref_code, :commentaire, :ordre
         )";
 
         $stmt = $this->db->prepare($sql);
@@ -128,6 +128,7 @@ class QuoteRepository
                 'quantite' => $ligne['quantite'],
                 'prix_unitaire_ht' => $ligne['prix_unitaire_ht'],
                 'total_ht' => $ligne['total_ligne_ht'],
+                'taux_tva' => $ligne['taux_tva'] ?? 20.00,
                 'prix_ref_code' => $ligne['prix_ref_code'],
                 'commentaire' => $ligne['commentaire'] ?? null,
                 'ordre' => $ordre++

@@ -1,0 +1,26 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteBase /chiffreo/
+
+    # Forcer HTTPS (désactivé en local)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Forcer la racine vers index.php
+    RewriteRule ^$ index.php [L]
+
+    # Route /app vers index.php
+    RewriteRule ^app/?$ index.php [L]
+    RewriteRule ^app/(.*)$ index.php [L]
+
+    # Laisser passer les fichiers statiques
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json|webmanifest)$
+    RewriteRule ^ - [L]
+
+    # Rediriger tout le reste vers index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>

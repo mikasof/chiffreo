@@ -161,6 +161,9 @@ class QuoteCalculator
                     break;
             }
 
+            // Taux TVA par ligne (par défaut 20%, sera mis à jour après détermination globale)
+            $tauxTvaLigne = (float) ($ligne['taux_tva'] ?? 20);
+
             $ligneCalculee = [
                 'designation' => $ligne['designation'],
                 'designation_catalogue' => $label,
@@ -169,6 +172,7 @@ class QuoteCalculator
                 'quantite' => $quantite,
                 'prix_unitaire_ht' => $prixUnitaireHT,
                 'total_ligne_ht' => $totalLigneHT,
+                'taux_tva' => $tauxTvaLigne,
                 'prix_ref_code' => $prixRef,
                 'commentaire' => $ligne['commentaire'],
                 'marque' => $ligne['marque'] ?? null,
@@ -193,8 +197,43 @@ class QuoteCalculator
             $tauxTVA = (float) ($quoteData['taux_tva'] ?? 20);
         }
 
-        // Calculs TVA et TTC
-        $montantTVA = round($totalHT * ($tauxTVA / 100), 2);
+        // Appliquer le taux TVA déterminé à toutes les lignes (sauf si déjà défini individuellement)
+        foreach ($lignesCalculees as &$ligne) {
+            // Si la ligne n'a pas de taux spécifique défini, utiliser le taux global
+            if (!isset($quoteData['lignes'][$ligne['prix_ref_code']]['taux_tva'])) {
+                $ligne['taux_tva'] = $tauxTVA;
+            }
+        }
+        unset($ligne);
+
+        // Calcul des sous-totaux par taux de TVA
+        $tvaParTaux = [];
+        foreach ($lignesCalculees as $ligne) {
+            $taux = (float) $ligne['taux_tva'];
+            if (!isset($tvaParTaux[$taux])) {
+                $tvaParTaux[$taux] = [
+                    'taux' => $taux,
+                    'base_ht' => 0,
+                    'montant_tva' => 0
+                ];
+            }
+            $tvaParTaux[$taux]['base_ht'] += $ligne['total_ligne_ht'];
+        }
+
+        // Calculer le montant TVA pour chaque taux et trier par taux décroissant
+        $montantTVATotal = 0;
+        foreach ($tvaParTaux as $taux => &$detail) {
+            $detail['base_ht'] = round($detail['base_ht'], 2);
+            $detail['montant_tva'] = round($detail['base_ht'] * ($taux / 100), 2);
+            $montantTVATotal += $detail['montant_tva'];
+        }
+        unset($detail);
+
+        // Trier par taux décroissant (20% en premier)
+        krsort($tvaParTaux);
+        $tvaDetails = array_values($tvaParTaux);
+
+        $montantTVA = round($montantTVATotal, 2);
         $totalTTC = round($totalHT + $montantTVA, 2);
 
         // Enrichir le devis
@@ -204,7 +243,8 @@ class QuoteCalculator
             'main_oeuvre_ht' => round($totalMainOeuvre, 2),
             'forfait_ht' => round($totalForfait, 2),
             'total_ht' => round($totalHT, 2),
-            'taux_tva' => $tauxTVA,
+            'taux_tva' => $tauxTVA, // Taux principal (pour rétrocompatibilité)
+            'tva_details' => $tvaDetails, // Détail par taux
             'montant_tva' => $montantTVA,
             'total_ttc' => $totalTTC
         ];

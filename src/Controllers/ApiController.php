@@ -388,7 +388,7 @@ class ApiController
             if ($userId) {
                 $userPricing = $this->userRepo->getPricing($userId);
                 $userParams = [
-                    'hourly_rate' => $userPricing['hourly_rate'] ?? 45,
+                    'hourly_rate' => $userPricing['hourly_rate'] ?? 70,
                     'product_margin' => $userPricing['product_margin'] ?? 20,
                     'travel_type' => $userPricing['travel_type'] ?? 'fixed',
                     'travel_fixed_amount' => $userPricing['travel_fixed_amount'] ?? 30,
@@ -399,7 +399,7 @@ class ApiController
             } else {
                 // Valeurs par défaut pour test sans auth
                 $userParams = [
-                    'hourly_rate' => 45,
+                    'hourly_rate' => 70,
                     'product_margin' => 20,
                     'travel_type' => 'fixed',
                     'travel_fixed_amount' => 30,

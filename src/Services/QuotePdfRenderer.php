@@ -743,17 +743,18 @@ HTML;
 
         $html .= '<table>';
         $html .= '<thead><tr>';
-        $html .= '<th style="width:48%">Désignation</th>';
-        $html .= '<th class="center" style="width:8%">Qté</th>';
-        $html .= '<th class="center" style="width:10%">Unité</th>';
-        $html .= '<th class="right" style="width:14%">P.U. HT</th>';
-        $html .= '<th class="right" style="width:20%">Total HT</th>';
+        $html .= '<th style="width:42%">Désignation</th>';
+        $html .= '<th class="center" style="width:7%">Qté</th>';
+        $html .= '<th class="center" style="width:8%">Unité</th>';
+        $html .= '<th class="right" style="width:13%">P.U. HT</th>';
+        $html .= '<th class="right" style="width:15%">Total HT</th>';
+        $html .= '<th class="center" style="width:8%">TVA</th>';
         $html .= '</tr></thead>';
         $html .= '<tbody>';
 
         // Matériel
         if (!empty($lignesMateriel)) {
-            $html .= '<tr class="category-header"><td colspan="5">FOURNITURES</td></tr>';
+            $html .= '<tr class="category-header"><td colspan="6">FOURNITURES</td></tr>';
             foreach ($lignesMateriel as $ligne) {
                 $html .= $this->renderLigneRow($ligne);
             }
@@ -761,7 +762,7 @@ HTML;
 
         // Main d'oeuvre
         if (!empty($lignesMO)) {
-            $html .= '<tr class="category-header"><td colspan="5">MAIN D\'ŒUVRE</td></tr>';
+            $html .= '<tr class="category-header"><td colspan="6">MAIN D\'ŒUVRE</td></tr>';
             foreach ($lignesMO as $ligne) {
                 $html .= $this->renderLigneRow($ligne);
             }
@@ -769,7 +770,7 @@ HTML;
 
         // Forfaits
         if (!empty($lignesForfait)) {
-            $html .= '<tr class="category-header"><td colspan="5">FORFAITS</td></tr>';
+            $html .= '<tr class="category-header"><td colspan="6">FORFAITS</td></tr>';
             foreach ($lignesForfait as $ligne) {
                 $html .= $this->renderLigneRow($ligne);
             }
@@ -791,7 +792,22 @@ HTML;
         }
 
         $html .= '<tr class="subtotal"><td class="label"><strong>Total HT</strong></td><td class="value"><strong>' . $this->formatPrice($totaux['total_ht'] ?? 0) . '</strong></td></tr>';
-        $html .= '<tr><td class="label">TVA ' . ($totaux['taux_tva'] ?? 20) . '%</td><td class="value">' . $this->formatPrice($totaux['montant_tva'] ?? 0) . '</td></tr>';
+
+        // Afficher les sous-totaux TVA par taux si plusieurs taux
+        $tvaDetails = $totaux['tva_details'] ?? [];
+        if (count($tvaDetails) > 1) {
+            // Plusieurs taux de TVA : afficher le détail
+            foreach ($tvaDetails as $tvaDetail) {
+                $taux = $tvaDetail['taux'] ?? 20;
+                $baseHt = $tvaDetail['base_ht'] ?? 0;
+                $montantTva = $tvaDetail['montant_tva'] ?? 0;
+                $html .= '<tr><td class="label">TVA ' . $taux . '% sur ' . $this->formatPrice($baseHt) . '</td><td class="value">' . $this->formatPrice($montantTva) . '</td></tr>';
+            }
+        } else {
+            // Un seul taux : affichage simple
+            $html .= '<tr><td class="label">TVA ' . ($totaux['taux_tva'] ?? 20) . '%</td><td class="value">' . $this->formatPrice($totaux['montant_tva'] ?? 0) . '</td></tr>';
+        }
+
         $html .= '<tr class="total-ttc"><td class="label">TOTAL TTC</td><td class="value">' . $this->formatPrice($totaux['total_ttc'] ?? 0) . '</td></tr>';
         $html .= '</table></div></div>';
 
@@ -915,6 +931,7 @@ HTML;
         $html .= '<td class="center">' . $this->escape($ligne['unite'] ?? '') . '</td>';
         $html .= '<td class="right">' . $this->formatPrice($ligne['prix_unitaire_ht'] ?? 0) . '</td>';
         $html .= '<td class="right"><strong>' . $this->formatPrice($ligne['total_ligne_ht'] ?? 0) . '</strong></td>';
+        $html .= '<td class="center">' . ($ligne['taux_tva'] ?? 20) . '%</td>';
         $html .= '</tr>';
 
         return $html;

@@ -635,7 +635,7 @@ class MaterialEstimator
         // ====== ETAPE 8 : MAIN D'OEUVRE ======
 
         $heuresTotal = 0;
-        $tauxHoraire = 45;
+        $tauxHoraire = 70;
 
         // D�pose si r�novation
         if ($type === 'renovation_complete') {

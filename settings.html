@@ -8,8 +8,8 @@
     <title>Mon compte - Chiffreo</title>
 
     <!-- PWA -->
-    <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="/icons/logo_chiffreo.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/logo_chiffreo.png">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,8 +19,8 @@
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
 
-    <link rel="stylesheet" href="/css/app.css">
-    <link rel="stylesheet" href="/css/settings.css?v=3">
+    <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="css/settings.css?v=3">
 </head>
 <body>
     <div id="app">
@@ -28,7 +28,7 @@
         <header class="header">
             <div class="header-content">
                 <a href="/" class="logo">
-                    <img src="/icons/logo_chiffreo.png" alt="Chiffreo" class="logo-img">
+                    <img src="icons/logo_chiffreo.png" alt="Chiffreo" class="logo-img">
                     <span>Chiffreo</span>
                 </a>
 
@@ -452,7 +452,19 @@
     <!-- Toast notifications -->
     <div id="toastContainer" class="toast-container"></div>
 
-    <script src="/js/config.js?v=5"></script>
-    <script src="/js/settings.js?v=3"></script>
+    <script src="js/config.js?v=5"></script>
+    <script src="js/settings.js?v=3"></script>
+    <script>
+    (function() {
+        var basePath = (window.CHIFFREO_CONFIG && window.CHIFFREO_CONFIG.BASE_PATH) || "";
+        if (!basePath) return;
+        document.querySelectorAll('a[href^="/"]').forEach(function(link) {
+            var href = link.getAttribute("href");
+            if (href && href.indexOf("//") !== 0 && href.indexOf(basePath) !== 0) {
+                link.setAttribute("href", basePath + href);
+            }
+        });
+    })();
+    </script>
 </body>
 </html>

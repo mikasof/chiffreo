@@ -15,9 +15,9 @@
     <meta property="og:image" content="/icons/og-image.png">
 
     <!-- PWA -->
-    <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="/icons/logo_chiffreo.png">
-    <link rel="icon" type="image/png" href="/icons/logo_chiffreo.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/logo_chiffreo.png">
+    <link rel="icon" type="image/png" href="icons/logo_chiffreo.png">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,14 +27,14 @@
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
 
-    <link rel="stylesheet" href="/css/landing.css">
+    <link rel="stylesheet" href="css/landing.css">
 </head>
 <body>
     <!-- Navigation -->
     <nav class="nav">
         <div class="nav-container">
             <a href="/" class="nav-logo">
-                <img src="/icons/logo_chiffreo.png" alt="Chiffreo" class="nav-logo-img">
+                <img src="icons/logo_chiffreo.png" alt="Chiffreo" class="nav-logo-img">
                 <span>Chiffreo</span>
             </a>
             <div class="nav-links">
@@ -487,7 +487,7 @@
     <footer class="footer">
         <div class="footer-container">
             <div class="footer-brand">
-                <img src="/icons/logo_chiffreo.png" alt="Chiffreo" class="footer-logo">
+                <img src="icons/logo_chiffreo.png" alt="Chiffreo" class="footer-logo">
                 <span>Chiffreo</span>
             </div>
             <div class="footer-links">
@@ -498,6 +498,8 @@
         </div>
     </footer>
 
+    <!-- Config dynamique -->
+    <script src="js/config.js"></script>
     <script>
     // Toggle Mensuel/Annuel
     (function() {
@@ -572,9 +574,20 @@
         if (token) {
             // Utilisateur connecté
             authLink.innerHTML = '<i class="ph ph-user-circle"></i><span>Mon compte</span>';
-            authLink.href = '/settings';
+            authLink.href = (window.CHIFFREO_CONFIG?.BASE_PATH || '') + '/settings';
             authLink.classList.add('logged-in');
         }
+    })();
+
+    // Fix all internal links with BASE_PATH
+    (function() {
+        const basePath = window.CHIFFREO_CONFIG?.BASE_PATH || '';
+        document.querySelectorAll('a[href^="/"]').forEach(link => {
+            const href = link.getAttribute('href');
+            if (href && !href.startsWith('//') && !href.startsWith(basePath)) {
+                link.setAttribute('href', basePath + href);
+            }
+        });
     })();
     </script>
 </body>

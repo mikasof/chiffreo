@@ -17,7 +17,7 @@
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
 
-    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="css/app.css">
     <style>
         .legal-page {
             max-width: 900px;
@@ -265,7 +265,7 @@
         <header class="header">
             <div class="header-content">
                 <a href="/app" class="logo">
-                    <img src="/icons/logo_chiffreo.png" alt="Chiffreo" class="logo-img">
+                    <img src="icons/logo_chiffreo.png" alt="Chiffreo" class="logo-img">
                     <span>Chiffreo</span>
                 </a>
             </div>
@@ -771,5 +771,18 @@
             </div>
         </footer>
     </div>
+    <script src="js/config.js"></script>
+    <script>
+    (function() {
+        var basePath = (window.CHIFFREO_CONFIG && window.CHIFFREO_CONFIG.BASE_PATH) || "";
+        if (!basePath) return;
+        document.querySelectorAll('a[href^="/"]').forEach(function(link) {
+            var href = link.getAttribute("href");
+            if (href && href.indexOf("//") !== 0 && href.indexOf(basePath) !== 0) {
+                link.setAttribute("href", basePath + href);
+            }
+        });
+    })();
+    </script>
 </body>
 </html>

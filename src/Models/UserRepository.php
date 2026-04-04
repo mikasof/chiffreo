@@ -267,7 +267,7 @@ class UserRepository
 
         if (!$row) {
             return [
-                'hourly_rate' => 45.00,
+                'hourly_rate' => 70.00,
                 'product_margin' => 20.00,
                 'supplier_discount' => 0.00,
                 'travel_type' => 'free',

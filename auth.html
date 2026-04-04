@@ -9,8 +9,8 @@
     <title>Connexion - Chiffreo</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/icons/favicon.png">
-    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" href="icons/favicon.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,13 +21,13 @@
     <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
 
     <!-- Styles -->
-    <link rel="stylesheet" href="/css/auth.css?v=5">
+    <link rel="stylesheet" href="css/auth.css?v=5">
 </head>
 <body>
     <!-- Header minimal -->
     <header class="auth-header">
         <a href="/" class="auth-logo">
-            <img src="/icons/logo_chiffreo.png" alt="Chiffreo" height="32">
+            <img src="icons/logo_chiffreo.png" alt="Chiffreo" height="32">
         </a>
     </header>
 
@@ -214,7 +214,19 @@
         </nav>
     </footer>
 
-    <script src="/js/config.js?v=5"></script>
-    <script src="/js/auth.js?v=5"></script>
+    <script src="js/config.js?v=5"></script>
+    <script src="js/auth.js?v=5"></script>
+    <script>
+    (function() {
+        var basePath = (window.CHIFFREO_CONFIG && window.CHIFFREO_CONFIG.BASE_PATH) || "";
+        if (!basePath) return;
+        document.querySelectorAll('a[href^="/"]').forEach(function(link) {
+            var href = link.getAttribute("href");
+            if (href && href.indexOf("//") !== 0 && href.indexOf(basePath) !== 0) {
+                link.setAttribute("href", basePath + href);
+            }
+        });
+    })();
+    </script>
 </body>
 </html>

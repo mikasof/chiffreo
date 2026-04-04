@@ -855,8 +855,8 @@ function transformV2ToLegacy(quote) {
             categorie: 'materiel',
             unite: f.unite || 'u',
             quantite: f.quantite,
-            prix_unitaire_ht: f.prix_vente_unitaire_ht,
-            total_ligne_ht: f.total_ligne_ht,
+            prix_unitaire_ht: f.prix_vente_unitaire_ht || f.prix_unitaire_ht || 0,
+            total_ligne_ht: f.total_ligne_ht || f.total_ht || 0,
             commentaire: f.gamme ? `Gamme: ${f.gamme}` : null
         });
     });
@@ -868,8 +868,8 @@ function transformV2ToLegacy(quote) {
             categorie: 'main_oeuvre',
             unite: 'h',
             quantite: mo.heures,
-            prix_unitaire_ht: mo.taux_horaire,
-            total_ligne_ht: mo.total_ligne_ht
+            prix_unitaire_ht: mo.taux_horaire || 0,
+            total_ligne_ht: mo.total_ligne_ht || mo.total_ht || 0
         });
     });
 
@@ -972,7 +972,7 @@ function renderQuoteResult(data) {
         // Ligne catégorie
         const catRow = document.createElement('tr');
         catRow.className = 'category-row';
-        catRow.innerHTML = `<td colspan="5">${cat.label}</td>`;
+        catRow.innerHTML = `<td colspan="6">${cat.label}</td>`;
         elements.lignesTable.appendChild(catRow);
 
         // Lignes
@@ -985,6 +985,7 @@ function renderQuoteResult(data) {
                 <td class="right">${ligne.quantite}</td>
                 <td class="right">${formatPrice(ligne.prix_unitaire_ht)}</td>
                 <td class="right">${formatPrice(ligne.total_ligne_ht)}</td>
+                <td class="center">${ligne.taux_tva || 20}%</td>
                 <td class="actions-col">
                     <div class="row-actions">
                         <button type="button" class="btn-edit" title="Modifier">
@@ -1008,9 +1009,33 @@ function renderQuoteResult(data) {
     // Totaux
     const totaux = quote.totaux || {};
     elements.totalHT.textContent = formatPrice(totaux.total_ht || 0);
-    elements.tauxTVA.textContent = totaux.taux_tva || 20;
-    elements.totalTVA.textContent = formatPrice(totaux.montant_tva || 0);
     elements.totalTTC.textContent = formatPrice(totaux.total_ttc || 0);
+
+    // Affichage TVA : détail par taux si plusieurs, sinon simple
+    const tvaDetails = totaux.tva_details || [];
+    const tvaDetailsContainer = document.getElementById('tvaDetailsContainer');
+    const tvaSingleLine = document.getElementById('tvaSingleLine');
+
+    if (tvaDetails.length > 1) {
+        // Plusieurs taux de TVA
+        tvaSingleLine.style.display = 'none';
+        tvaDetailsContainer.innerHTML = '';
+        tvaDetails.forEach(detail => {
+            const line = document.createElement('div');
+            line.className = 'totaux-line';
+            line.innerHTML = `
+                <span>TVA ${detail.taux}% sur ${formatPrice(detail.base_ht)}</span>
+                <span class="amount">${formatPrice(detail.montant_tva)}</span>
+            `;
+            tvaDetailsContainer.appendChild(line);
+        });
+    } else {
+        // Un seul taux
+        tvaSingleLine.style.display = 'flex';
+        tvaDetailsContainer.innerHTML = '';
+        elements.tauxTVA.textContent = totaux.taux_tva || 20;
+        elements.totalTVA.textContent = formatPrice(totaux.montant_tva || 0);
+    }
 
     // Afficher les paramètres appliqués (V2 uniquement)
     const paramsAppliques = data.quote?.parametres_appliques;
@@ -1483,6 +1508,9 @@ function openEditModal(index) {
     elements.modalTitle.textContent = isNew ? 'Ajouter une ligne' : 'Modifier la ligne';
     elements.editLineIndex.value = index;
 
+    // Récupérer l'élément TVA
+    const editTauxTva = document.getElementById('editTauxTva');
+
     if (isNew) {
         // Nouvelle ligne - valeurs par défaut
         elements.editCategorie.value = 'materiel';
@@ -1490,6 +1518,7 @@ function openEditModal(index) {
         elements.editQuantite.value = '1';
         elements.editUnite.value = 'u';
         elements.editPrixUnitaire.value = '0';
+        if (editTauxTva) editTauxTva.value = state.currentQuote?.quote?.totaux?.taux_tva || '20';
         editingLineOriginal = null;
     } else {
         // Édition - charger les valeurs existantes
@@ -1499,6 +1528,7 @@ function openEditModal(index) {
         elements.editQuantite.value = ligne.quantite || 1;
         elements.editUnite.value = ligne.unite || 'u';
         elements.editPrixUnitaire.value = ligne.prix_unitaire_ht || 0;
+        if (editTauxTva) editTauxTva.value = ligne.taux_tva || '20';
 
         // Stocker les données originales pour détecter les changements de prix
         editingLineOriginal = {
@@ -1506,7 +1536,8 @@ function openEditModal(index) {
             marque: ligne.marque || null,
             reference: ligne.reference || null,
             prix_unitaire_ht: ligne.prix_unitaire_ht || 0,
-            categorie: ligne.categorie
+            categorie: ligne.categorie,
+            taux_tva: ligne.taux_tva || 20
         };
     }
 
@@ -1548,6 +1579,10 @@ function saveLine() {
         return;
     }
 
+    // Récupérer le taux TVA
+    const editTauxTva = document.getElementById('editTauxTva');
+    const tauxTva = editTauxTva ? parseFloat(editTauxTva.value) || 20 : 20;
+
     // Créer l'objet ligne
     const ligne = {
         categorie: elements.editCategorie.value,
@@ -1555,7 +1590,8 @@ function saveLine() {
         quantite: quantite,
         unite: elements.editUnite.value || 'u',
         prix_unitaire_ht: prixUnitaire,
-        total_ligne_ht: quantite * prixUnitaire
+        total_ligne_ht: quantite * prixUnitaire,
+        taux_tva: tauxTva
     };
 
     // Ajouter ou modifier
@@ -1658,31 +1694,71 @@ function deleteLine(index) {
 
 function recalculateTotals() {
     const lignes = state.currentQuote.quote.lignes || [];
-    const tauxTVA = state.currentQuote.quote.totaux?.taux_tva || 20;
+    const defaultTauxTVA = state.currentQuote.quote.totaux?.taux_tva || 20;
 
     // Calculer le total HT
     const totalHT = lignes.reduce((sum, ligne) => {
         return sum + (ligne.total_ligne_ht || 0);
     }, 0);
 
-    // Calculer TVA et TTC
-    const montantTVA = totalHT * (tauxTVA / 100);
-    const totalTTC = totalHT + montantTVA;
+    // Grouper par taux de TVA
+    const tvaParTaux = {};
+    lignes.forEach(ligne => {
+        const taux = ligne.taux_tva || defaultTauxTVA;
+        if (!tvaParTaux[taux]) {
+            tvaParTaux[taux] = { taux: taux, base_ht: 0, montant_tva: 0 };
+        }
+        tvaParTaux[taux].base_ht += (ligne.total_ligne_ht || 0);
+    });
+
+    // Calculer le montant TVA pour chaque taux
+    let totalTVA = 0;
+    Object.values(tvaParTaux).forEach(detail => {
+        detail.montant_tva = detail.base_ht * (detail.taux / 100);
+        totalTVA += detail.montant_tva;
+    });
+
+    // Trier par taux décroissant et convertir en tableau
+    const tvaDetails = Object.values(tvaParTaux).sort((a, b) => b.taux - a.taux);
+
+    const totalTTC = totalHT + totalTVA;
 
     // Mettre à jour l'état
     if (!state.currentQuote.quote.totaux) {
         state.currentQuote.quote.totaux = {};
     }
     state.currentQuote.quote.totaux.total_ht = totalHT;
-    state.currentQuote.quote.totaux.taux_tva = tauxTVA;
-    state.currentQuote.quote.totaux.montant_tva = montantTVA;
+    state.currentQuote.quote.totaux.taux_tva = defaultTauxTVA;
+    state.currentQuote.quote.totaux.tva_details = tvaDetails;
+    state.currentQuote.quote.totaux.montant_tva = totalTVA;
     state.currentQuote.quote.totaux.total_ttc = totalTTC;
 
     // Mettre à jour l'affichage
     elements.totalHT.textContent = formatPrice(totalHT);
-    elements.tauxTVA.textContent = tauxTVA;
-    elements.totalTVA.textContent = formatPrice(montantTVA);
     elements.totalTTC.textContent = formatPrice(totalTTC);
+
+    // Affichage TVA : détail par taux si plusieurs, sinon simple
+    const tvaDetailsContainer = document.getElementById('tvaDetailsContainer');
+    const tvaSingleLine = document.getElementById('tvaSingleLine');
+
+    if (tvaDetails.length > 1) {
+        tvaSingleLine.style.display = 'none';
+        tvaDetailsContainer.innerHTML = '';
+        tvaDetails.forEach(detail => {
+            const line = document.createElement('div');
+            line.className = 'totaux-line';
+            line.innerHTML = `
+                <span>TVA ${detail.taux}% sur ${formatPrice(detail.base_ht)}</span>
+                <span class="amount">${formatPrice(detail.montant_tva)}</span>
+            `;
+            tvaDetailsContainer.appendChild(line);
+        });
+    } else {
+        tvaSingleLine.style.display = 'flex';
+        tvaDetailsContainer.innerHTML = '';
+        elements.tauxTVA.textContent = defaultTauxTVA;
+        elements.totalTVA.textContent = formatPrice(totalTVA);
+    }
 }
 
 function renderQuoteLines() {
@@ -1710,7 +1786,7 @@ function renderQuoteLines() {
         // Ligne catégorie
         const catRow = document.createElement('tr');
         catRow.className = 'category-row';
-        catRow.innerHTML = `<td colspan="5">${cat.label}</td>`;
+        catRow.innerHTML = `<td colspan="6">${cat.label}</td>`;
         elements.lignesTable.appendChild(catRow);
 
         // Lignes
@@ -1722,6 +1798,7 @@ function renderQuoteLines() {
                 <td class="right">${item.quantite}</td>
                 <td class="right">${formatPrice(item.prix_unitaire_ht)}</td>
                 <td class="right">${formatPrice(item.total_ligne_ht)}</td>
+                <td class="center">${item.taux_tva || 20}%</td>
                 <td class="actions-col">
                     <div class="row-actions">
                         <button type="button" class="btn-edit" title="Modifier">

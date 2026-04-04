@@ -584,7 +584,7 @@ PROMPT,
      */
     'format_parametres' => function(array $user): string {
         // Taux horaire
-        $tauxHoraire = $user['hourly_rate'] ?? 45;
+        $tauxHoraire = $user['hourly_rate'] ?? 70;
 
         // Marge sur fournitures
         $marge = $user['product_margin'] ?? 20;
