@@ -47,6 +47,16 @@ const state = {
         adresse: '',
         codePostal: '',
         ville: ''
+    },
+    // Mini-chat pour questions contextuelles
+    chatState: {
+        started: false,
+        questions: [],
+        currentIndex: 0,
+        answers: [],
+        isComplete: false,
+        workType: null,
+        pendingSubQuestion: null
     }
 };
 
@@ -737,12 +747,41 @@ async function handleSubmit(e) {
         return;
     }
 
+    // === MINI-CHAT : Intégration questions contextuelles ===
+
+    // Étape 1: Si chat pas encore démarré, générer les questions
+    if (!state.chatState.started && !state.chatState.isComplete) {
+        const chatStarted = await startQuestionChat();
+        if (chatStarted) {
+            // Le chat prend le relais, on arrête handleSubmit ici
+            return;
+        }
+        // Si pas de questions générées, on continue normalement
+    }
+
+    // Étape 2: Si chat en cours (pas terminé), ne rien faire
+    if (state.chatState.started && !state.chatState.isComplete) {
+        showToast('Terminez les questions ou cliquez sur "Passer"', 'warning');
+        return;
+    }
+
+    // Étape 3: Chat terminé → continuer avec description enrichie
+    // === FIN MINI-CHAT ===
+
     try {
         showLoading('Génération du devis...');
         elements.generateBtn.disabled = true;
 
         const formData = new FormData();
-        formData.append('description', description);
+
+        // Utiliser la description enrichie si le chat a été utilisé
+        const finalDescription = state.chatState.started ? buildEnrichedDescription() : description;
+        formData.append('description', finalDescription);
+
+        // Envoyer les réponses du chat pour traitement backend
+        if (state.chatState.answers && state.chatState.answers.length > 0) {
+            formData.append('chat_answers', JSON.stringify(state.chatState.answers));
+        }
 
         if (transcription) {
             formData.append('transcription', transcription);
@@ -758,15 +797,8 @@ async function handleSubmit(e) {
             formData.append('images[]', file);
         });
 
-        // Vérifier si le mode V2 est activé
-        const useV2 = document.getElementById('useV2Toggle')?.checked || false;
-        const apiEndpoint = useV2 ? '/api/generate-v2' : '/api/generate';
-
-        if (useV2) {
-            console.log('[Chiffreo] Mode V2 activé - utilisation du nouveau système multi-agents');
-        }
-
-        const response = await fetch(BASE_PATH + apiEndpoint, {
+        // Toujours utiliser V2 (multi-agents avec marques & références)
+        const response = await fetch(BASE_PATH + '/api/generate-v2', {
             method: 'POST',
             headers: Auth.getAuthHeader(),
             body: formData
@@ -846,6 +878,9 @@ function transformV2ToLegacy(quote) {
     // Transformer fournitures + main_oeuvre en lignes
     const lignes = [];
 
+    // Récupérer le taux TVA global - c'est LUI qui fait foi (calculé par TvaService)
+    const tauxTvaGlobal = quote.totaux?.taux_tva || quote.totaux?.tva_taux || 20;
+
     // Fournitures → catégorie "materiel"
     (quote.fournitures || []).forEach(f => {
         lignes.push({
@@ -857,6 +892,7 @@ function transformV2ToLegacy(quote) {
             quantite: f.quantite,
             prix_unitaire_ht: f.prix_vente_unitaire_ht || f.prix_unitaire_ht || 0,
             total_ligne_ht: f.total_ligne_ht || f.total_ht || 0,
+            taux_tva: tauxTvaGlobal, // Toujours utiliser le taux global calculé
             commentaire: f.gamme ? `Gamme: ${f.gamme}` : null
         });
     });
@@ -869,7 +905,8 @@ function transformV2ToLegacy(quote) {
             unite: 'h',
             quantite: mo.heures,
             prix_unitaire_ht: mo.taux_horaire || 0,
-            total_ligne_ht: mo.total_ligne_ht || mo.total_ht || 0
+            total_ligne_ht: mo.total_ligne_ht || mo.total_ht || 0,
+            taux_tva: tauxTvaGlobal // Toujours utiliser le taux global calculé
         });
     });
 
@@ -881,16 +918,18 @@ function transformV2ToLegacy(quote) {
             unite: 'forfait',
             quantite: 1,
             prix_unitaire_ht: quote.deplacement.montant_ht,
-            total_ligne_ht: quote.deplacement.montant_ht
+            total_ligne_ht: quote.deplacement.montant_ht,
+            taux_tva: tauxTvaGlobal // Toujours utiliser le taux global calculé
         });
     }
 
-    // Transformer totaux
+    // Transformer totaux (accepter les deux formats de noms de champs)
     const totaux = {
         total_ht: quote.totaux?.total_ht || 0,
-        taux_tva: quote.totaux?.tva_taux || 20,
-        montant_tva: quote.totaux?.tva_montant || 0,
-        total_ttc: quote.totaux?.total_ttc || 0
+        taux_tva: quote.totaux?.taux_tva || quote.totaux?.tva_taux || 20,
+        montant_tva: quote.totaux?.montant_tva || quote.totaux?.tva_montant || 0,
+        total_ttc: quote.totaux?.total_ttc || 0,
+        tva_details: quote.totaux?.tva_details || []
     };
 
     // Retourner le format compatible
@@ -921,8 +960,8 @@ function renderQuoteResult(data) {
         elements.chantierHypotheses.appendChild(span);
     });
 
-    // Questions
-    if (quote.questions_a_poser?.length > 0) {
+    // Questions statiques (affichées seulement si le mini-chat n'a PAS été utilisé)
+    if (!state.chatState.started && quote.questions_a_poser?.length > 0) {
         elements.questionsCard.style.display = 'block';
         elements.questionsList.innerHTML = '';
         quote.questions_a_poser.forEach(q => {
@@ -1037,30 +1076,9 @@ function renderQuoteResult(data) {
         elements.totalTVA.textContent = formatPrice(totaux.montant_tva || 0);
     }
 
-    // Afficher les paramètres appliqués (V2 uniquement)
-    const paramsAppliques = data.quote?.parametres_appliques;
+    // Supprimer l'ancien bloc paramètres s'il existe
     const existingParamsBlock = document.getElementById('paramsAppliquesBlock');
     if (existingParamsBlock) existingParamsBlock.remove();
-
-    if (paramsAppliques) {
-        console.log('[Chiffreo V2] Paramètres appliqués:', paramsAppliques);
-        const paramsBlock = document.createElement('div');
-        paramsBlock.id = 'paramsAppliquesBlock';
-        paramsBlock.style.cssText = 'margin-top: 1rem; padding: 0.75rem; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; font-size: 0.8rem;';
-        paramsBlock.innerHTML = `
-            <div style="font-weight: 600; color: #1E40AF; margin-bottom: 0.5rem;">📊 Paramètres appliqués (V2)</div>
-            <div style="display: grid; gap: 0.25rem; color: #1E3A5F;">
-                <span>• Taux horaire MO : <strong>${paramsAppliques.taux_horaire_utilise || '?'}€/h</strong></span>
-                <span>• Marge fournitures : <strong>${paramsAppliques.marge_fournitures_pourcent || '?'}%</strong></span>
-                <span>• TVA ${totaux.tva_taux}% : <strong>${paramsAppliques.raison_tva || 'Non précisé'}</strong></span>
-            </div>
-        `;
-        // Insérer après les totaux
-        const totauxSection = elements.totalTTC.closest('.totaux-grid') || elements.totalTTC.parentElement;
-        if (totauxSection) {
-            totauxSection.parentElement.insertBefore(paramsBlock, totauxSection.nextSibling);
-        }
-    }
 
     // Exclusions
     if (quote.exclusions?.length > 0) {
@@ -1084,6 +1102,9 @@ function resetForm() {
     state.editMode = false;
     state.editQuoteId = null;
     state.hasChanges = false;
+
+    // Réinitialiser le mini-chat
+    resetChatState();
 
     elements.transcriptionResult.style.display = 'none';
     elements.imagePreview.innerHTML = '';
@@ -1817,6 +1838,433 @@ function renderQuoteLines() {
             elements.lignesTable.appendChild(tr);
         });
     });
+}
+
+// === Mini-Chat Questions ===
+
+/**
+ * Récupère les éléments DOM du mini-chat
+ */
+function getChatElements() {
+    return {
+        container: document.getElementById('miniChatContainer'),
+        messages: document.getElementById('chatMessages'),
+        progress: document.getElementById('chatProgress'),
+        quickButtons: document.getElementById('quickButtons'),
+        textInputArea: document.getElementById('textInputArea'),
+        chatInput: document.getElementById('chatInput'),
+        sendBtn: document.getElementById('sendBtn'),
+        skipAllBtn: document.getElementById('skipAllQuestionsBtn'),
+        generateBtn: document.getElementById('generateWithAnswersBtn')
+    };
+}
+
+/**
+ * Démarre le mini-chat avec les questions générées
+ */
+async function startQuestionChat() {
+    const description = elements.description.value.trim();
+    const transcription = state.transcription;
+
+    console.log('[Chat] Démarrage startQuestionChat()');
+
+    if (!description && !transcription) {
+        console.log('[Chat] Pas de description, skip');
+        return false;
+    }
+
+    try {
+        showLoading('Préparation des questions...');
+
+        console.log('[Chat] Appel API /api/generate-questions');
+        const response = await fetch(BASE_PATH + '/api/generate-questions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...Auth.getAuthHeader()
+            },
+            body: JSON.stringify({
+                description: description,
+                transcription: transcription
+            })
+        });
+
+        console.log('[Chat] Réponse status:', response.status);
+
+        // Gérer les erreurs HTTP (401, 500, etc.)
+        if (!response.ok) {
+            console.warn('[Chat] Erreur HTTP:', response.status, '- passage direct à la génération');
+            hideLoading();
+            state.chatState.isComplete = true;
+            return false;
+        }
+
+        const result = await response.json();
+        console.log('[Chat] Résultat API:', result);
+        hideLoading();
+
+        if (!result.success) {
+            console.log('[Chat] API error:', result.error, '- passage direct');
+            state.chatState.isComplete = true;
+            return false;
+        }
+
+        if (!result.data?.questions || result.data.questions.length === 0) {
+            // Pas de questions = continuer directement vers génération
+            console.log('[Chat] Aucune question générée (type:', result.data?.work_type, ')');
+            state.chatState.isComplete = true;
+            return false;
+        }
+
+        console.log('[Chat] Questions reçues:', result.data.questions.length, 'pour type:', result.data.work_type);
+
+        // Initialiser le chat
+        state.chatState = {
+            started: true,
+            questions: result.data.questions,
+            currentIndex: 0,
+            answers: [],
+            isComplete: false,
+            workType: result.data.work_type,
+            pendingSubQuestion: null
+        };
+
+        showMiniChat();
+        askNextQuestion();
+        return true;
+
+    } catch (error) {
+        console.error('[Chat] Erreur génération questions:', error);
+        hideLoading();
+        // En cas d'erreur, continuer sans chat
+        state.chatState.isComplete = true;
+        return false;
+    }
+}
+
+/**
+ * Affiche le composant mini-chat (plein écran)
+ */
+function showMiniChat() {
+    const chat = getChatElements();
+    console.log('[Chat] showMiniChat() - container trouvé:', !!chat.container);
+    if (chat.container) {
+        chat.container.style.display = 'flex';
+        // Empêcher le scroll du body quand le chat est ouvert
+        document.body.style.overflow = 'hidden';
+        console.log('[Chat] Container affiché (fullscreen)');
+    } else {
+        console.error('[Chat] Container #miniChatContainer non trouvé !');
+    }
+
+    // Event listeners
+    if (chat.skipAllBtn) {
+        chat.skipAllBtn.onclick = skipAllQuestions;
+    }
+    if (chat.generateBtn) {
+        chat.generateBtn.onclick = proceedToQuoteGeneration;
+    }
+    if (chat.sendBtn) {
+        chat.sendBtn.onclick = () => {
+            const answer = chat.chatInput.value.trim();
+            if (answer) {
+                handleChatAnswer(answer);
+                chat.chatInput.value = '';
+            }
+        };
+    }
+    if (chat.chatInput) {
+        chat.chatInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const answer = chat.chatInput.value.trim();
+                if (answer) {
+                    handleChatAnswer(answer);
+                    chat.chatInput.value = '';
+                }
+            }
+        };
+    }
+
+    // Bouton fermer
+    const closeBtn = document.getElementById('closeChatBtn');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            hideMiniChat();
+            resetChatState();
+        };
+    }
+
+    // Les listeners des quick buttons sont attachés dynamiquement dans showInputForType()
+}
+
+/**
+ * Cache le mini-chat
+ */
+function hideMiniChat() {
+    const chat = getChatElements();
+    if (chat.container) {
+        chat.container.style.display = 'none';
+        // Restaurer le scroll du body
+        document.body.style.overflow = '';
+    }
+}
+
+/**
+ * Met à jour l'affichage de progression
+ */
+function updateChatProgress() {
+    const chat = getChatElements();
+    const total = state.chatState.questions.length;
+    const current = state.chatState.currentIndex;
+    if (chat.progress) {
+        chat.progress.textContent = `${Math.min(current + 1, total)}/${total}`;
+    }
+}
+
+/**
+ * Pose la question suivante
+ */
+function askNextQuestion() {
+    const chatState = state.chatState;
+    const chat = getChatElements();
+
+    console.log('[Chat] askNextQuestion() - index:', chatState.currentIndex, '/', chatState.questions.length);
+
+    // Vérifier si on a une sous-question en attente
+    if (chatState.pendingSubQuestion) {
+        const subQ = chatState.pendingSubQuestion;
+        chatState.pendingSubQuestion = null;
+        console.log('[Chat] Sous-question:', subQ.question);
+        addChatMessage('assistant', subQ.question, subQ.impact);
+        showInputForType(subQ.type, subQ.options);
+        return;
+    }
+
+    // Vérifier si on a terminé
+    if (chatState.currentIndex >= chatState.questions.length) {
+        console.log('[Chat] Toutes les questions posées, fin du chat');
+        completeChatSession();
+        return;
+    }
+
+    updateChatProgress();
+
+    const question = chatState.questions[chatState.currentIndex];
+    console.log('[Chat] Question:', question.question, 'type:', question.type);
+    addChatMessage('assistant', question.question, question.impact);
+    showInputForType(question.type, question.options);
+}
+
+/**
+ * Affiche le bon type d'input selon le type de question
+ * @param {string} type - Type de question (oui_non, choix, texte)
+ * @param {array} options - Options pour les questions de type choix
+ */
+function showInputForType(type, options = null) {
+    const chat = getChatElements();
+
+    if (type === 'oui_non') {
+        // Remettre les boutons par défaut Oui/Non/Je ne sais pas
+        chat.quickButtons.innerHTML = `
+            <button type="button" class="btn-quick" data-answer="Oui">Oui</button>
+            <button type="button" class="btn-quick" data-answer="Non">Non</button>
+            <button type="button" class="btn-quick btn-skip" data-answer="Je ne sais pas">Je ne sais pas</button>
+        `;
+        attachQuickButtonListeners();
+        chat.quickButtons.style.display = 'flex';
+        chat.textInputArea.style.display = 'none';
+    } else if (type === 'choix' && options && options.length > 0) {
+        // Générer les boutons pour chaque option
+        chat.quickButtons.innerHTML = options.map(opt =>
+            `<button type="button" class="btn-quick" data-answer="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`
+        ).join('');
+        attachQuickButtonListeners();
+        chat.quickButtons.style.display = 'flex';
+        chat.textInputArea.style.display = 'none';
+    } else {
+        // Texte libre
+        chat.quickButtons.style.display = 'none';
+        chat.textInputArea.style.display = 'flex';
+        chat.chatInput.focus();
+    }
+}
+
+/**
+ * Attache les event listeners aux boutons de réponse rapide
+ */
+function attachQuickButtonListeners() {
+    document.querySelectorAll('#quickButtons .btn-quick').forEach(btn => {
+        btn.onclick = () => handleChatAnswer(btn.dataset.answer);
+    });
+}
+
+/**
+ * Ajoute un message au chat
+ */
+function addChatMessage(role, content, impact = null) {
+    const chat = getChatElements();
+
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `chat-message ${role}`;
+
+    let html = `<span>${escapeHtml(content)}</span>`;
+    if (impact && role === 'assistant') {
+        html += `<span class="impact-hint">💡 ${escapeHtml(impact)}</span>`;
+    }
+
+    msgDiv.innerHTML = html;
+    chat.messages.appendChild(msgDiv);
+
+    // Scroll vers le bas
+    chat.messages.scrollTop = chat.messages.scrollHeight;
+}
+
+/**
+ * Gère la réponse de l'utilisateur
+ */
+function handleChatAnswer(answer) {
+    const chatState = state.chatState;
+    const currentQuestion = chatState.questions[chatState.currentIndex];
+
+    // Afficher la réponse de l'utilisateur
+    addChatMessage('user', answer);
+
+    // Enregistrer la réponse
+    chatState.answers.push({
+        question_id: currentQuestion?.id || `q${chatState.currentIndex}`,
+        question: currentQuestion?.question || 'Question',
+        reponse: answer
+    });
+
+    // Vérifier s'il y a une sous-question
+    if (currentQuestion && currentQuestion.sous_question_si) {
+        const subQ = currentQuestion.sous_question_si[answer];
+        if (subQ) {
+            chatState.pendingSubQuestion = subQ;
+        }
+    }
+
+    // Passer à la question suivante
+    chatState.currentIndex++;
+
+    // Délai court pour effet visuel
+    setTimeout(() => {
+        askNextQuestion();
+    }, 300);
+}
+
+/**
+ * Termine la session de chat
+ */
+function completeChatSession() {
+    const chat = getChatElements();
+    state.chatState.isComplete = true;
+
+    // Message de fin
+    addChatMessage('assistant', 'Merci pour ces précisions ! Je vais maintenant générer votre devis personnalisé.');
+
+    // Cacher les inputs, activer le bouton générer
+    chat.quickButtons.style.display = 'none';
+    chat.textInputArea.style.display = 'none';
+
+    if (chat.generateBtn) {
+        chat.generateBtn.disabled = false;
+        chat.generateBtn.classList.add('pulse-attention');
+    }
+
+    // Cacher le bouton "Passer"
+    if (chat.skipAllBtn) {
+        chat.skipAllBtn.style.display = 'none';
+    }
+}
+
+/**
+ * Passe toutes les questions restantes
+ */
+function skipAllQuestions() {
+    const chatState = state.chatState;
+
+    // Marquer toutes les questions restantes comme "Je ne sais pas"
+    while (chatState.currentIndex < chatState.questions.length) {
+        const question = chatState.questions[chatState.currentIndex];
+        chatState.answers.push({
+            question_id: question.id,
+            question: question.question,
+            reponse: 'Je ne sais pas'
+        });
+        chatState.currentIndex++;
+    }
+
+    chatState.pendingSubQuestion = null;
+    completeChatSession();
+}
+
+/**
+ * Procède à la génération du devis après le chat
+ */
+function proceedToQuoteGeneration() {
+    // Cacher le chat
+    hideMiniChat();
+
+    // Relancer handleSubmit - le chat est maintenant complet
+    handleSubmit(new Event('submit'));
+}
+
+/**
+ * Construit la description enrichie avec les réponses du chat
+ */
+function buildEnrichedDescription() {
+    const description = elements.description.value.trim();
+    const answers = state.chatState.answers;
+
+    if (!answers || answers.length === 0) {
+        return description;
+    }
+
+    // Filtrer les "Je ne sais pas"
+    const relevantAnswers = answers.filter(a => a.reponse !== 'Je ne sais pas');
+
+    if (relevantAnswers.length === 0) {
+        return description;
+    }
+
+    let enriched = description;
+    enriched += '\n\n## Informations complémentaires:\n';
+    relevantAnswers.forEach(a => {
+        enriched += `- ${a.question}: ${a.reponse}\n`;
+    });
+
+    return enriched;
+}
+
+/**
+ * Réinitialise l'état du chat
+ */
+function resetChatState() {
+    state.chatState = {
+        started: false,
+        questions: [],
+        currentIndex: 0,
+        answers: [],
+        isComplete: false,
+        workType: null,
+        pendingSubQuestion: null
+    };
+    hideMiniChat();
+
+    // Réinitialiser l'affichage
+    const chat = getChatElements();
+    if (chat.messages) {
+        chat.messages.innerHTML = '';
+    }
+    if (chat.generateBtn) {
+        chat.generateBtn.disabled = true;
+        chat.generateBtn.classList.remove('pulse-attention');
+    }
+    if (chat.skipAllBtn) {
+        chat.skipAllBtn.style.display = '';
+    }
 }
 
 // === PWA ===

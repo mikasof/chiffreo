@@ -22,10 +22,23 @@ class TvaService
      * @param string $description Description des travaux
      * @param array $lignes Lignes du devis (optionnel)
      * @param array $context Contexte additionnel (type_batiment, anciennete, etc.)
+     *                       Accepte aussi les paramètres du chat:
+     *                       - logement_ancien (bool) → anciennete = 'ancien'
+     *                       - tva_forcee (int) → force le taux
+     *                       - local_professionnel (bool) → type_batiment = 'professionnel'
      * @return array ['taux' => float, 'raison' => string, 'attestation' => array|null, 'questions' => array]
      */
     public function determinerTva(string $description, array $lignes = [], array $context = []): array
     {
+        // Convertir les paramètres du chat vers le format attendu
+        $context = $this->normaliserContext($context);
+
+        // Si TVA forcée explicitement (ex: bâtiment < 2 ans confirmé par utilisateur)
+        if (isset($context['tva_forcee'])) {
+            $tauxForce = (float) $context['tva_forcee'];
+            return $this->resultat($tauxForce, 'TVA fixée selon les informations fournies par le client');
+        }
+
         $descLower = $this->normaliser($description);
 
         // 1. Vérifier les exclusions (toujours 20%)
@@ -230,6 +243,36 @@ class TvaService
             'eligible' => !empty($motifs),
             'motifs' => array_unique($motifs),
         ];
+    }
+
+    /**
+     * Normalise le contexte pour convertir les paramètres du chat
+     * vers le format attendu par le service TVA
+     */
+    private function normaliserContext(array $context): array
+    {
+        // Convertir local_professionnel → type_batiment (prioritaire)
+        if (isset($context['local_professionnel']) && $context['local_professionnel']) {
+            $context['type_batiment'] = 'professionnel';
+        }
+
+        // Convertir logement_ancien → anciennete
+        // La question parle de "logement", donc on déduit aussi que c'est une habitation
+        if (isset($context['logement_ancien'])) {
+            $context['anciennete'] = $context['logement_ancien'] ? 'ancien' : 'neuf';
+
+            // Si logement ancien confirmé ET pas de local_professionnel, c'est une habitation
+            if ($context['logement_ancien'] && !isset($context['local_professionnel'])) {
+                $context['type_batiment'] = $context['type_batiment'] ?? 'habitation';
+            }
+        }
+
+        // Si tva_reduite_possible est explicitement false, forcer 20%
+        if (isset($context['tva_reduite_possible']) && $context['tva_reduite_possible'] === false) {
+            $context['tva_forcee'] = 20;
+        }
+
+        return $context;
     }
 
     /**

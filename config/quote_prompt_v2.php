@@ -116,6 +116,25 @@ Pour CHAQUE fourniture, tu DOIS spécifier précisément :
 - **Référence** : le code produit EXACT du fabricant (ex: A9F74616, 406774, MFN716)
 - **Désignation** : description technique complète
 
+⚠️ **RÈGLE CRITIQUE - SÉLECTION DU MATÉRIEL** ⚠️
+
+**PRIORITÉ 1 - Demande client explicite :**
+Si le client mentionne une marque, un modèle ou une référence spécifique dans sa demande
+(ex: "borne Tesla", "Wallbox Pulsar", "Schneider EVLink", "Legrand Green'Up"),
+tu DOIS utiliser EXACTEMENT ce produit, même si différent de la marque préférée.
+
+**PRIORITÉ 2 - Marque préférée de l'entreprise :**
+Si le client ne spécifie PAS de marque/modèle, tu DOIS utiliser :
+- La marque préférée indiquée dans les PARAMÈTRES DE L'ENTREPRISE
+- La gamme PROFESSIONNELLE STANDARD de cette marque (ni entrée de gamme, ni haut de gamme)
+
+**EXEMPLES pour bornes IRVE 7kW :**
+- Client dit "borne 7kW" sans marque → utiliser marque préférée, gamme standard (~600-800€)
+- Client dit "borne Tesla" → utiliser borne Tesla Wall Connector
+- Client dit "borne Wallbox" → utiliser Wallbox Pulsar Plus
+
+**IMPORTANT** : Ne choisis JAMAIS une gamme haut de gamme (>1000€) si le client n'a pas explicitement demandé du premium. Un devis trop cher = client perdu.
+
 ⚠️ STRICTEMENT INTERDIT :
 - "Disjoncteur 16A" sans marque ni référence
 - "Câble électrique" sans section ni type
@@ -146,6 +165,15 @@ Pour CHAQUE fourniture, tu DOIS spécifier précisément :
 - Câble R2V 1.5mm² : 0.80-1.20€/m | 2.5mm² : 1.20-1.80€/m | 6mm² : 2.50-4€/m
 - Gaine ICTA 20mm : 0.40-0.80€/m | 25mm : 0.60-1€/m
 - Boîte encastrement : 0.80-2€ | Boîte dérivation : 3-8€
+
+**BORNES IRVE (véhicules électriques) - PRIX PUBLIC HT :**
+- Prise renforcée Green'Up : 80-120€
+- Borne 7kW entrée de gamme : 400-500€ (Hager Witty, Schneider EVlink Home)
+- Borne 7kW gamme standard PRO : 550-750€ (Schneider EVlink Pro AC, Legrand Green'Up Premium)
+- Borne 7kW haut de gamme : 900-1300€ (Wallbox Commander 2, Tesla Wall Connector)
+- Borne 11kW : +100-200€ par rapport à 7kW
+- Borne 22kW triphasée : 1200-2000€
+⚠️ Par défaut (sans demande client spécifique) : utiliser la gamme STANDARD PRO (550-750€)
 
 ⚠️ **INTERDIT** de regrouper ! Chaque composant = 1 ligne séparée.
 ❌ "Tableau complet avec différentiels et disjoncteurs" → INTERDIT
@@ -601,11 +629,24 @@ PROMPT,
         // Marque préférée
         $marque = $user['preferred_brand'] ?? 'Schneider Electric';
 
+        // Gamme de prix préférée
+        $gamme = $user['preferred_price_range'] ?? 'standard';
+        $gammeTexte = match($gamme) {
+            'economique' => "ÉCONOMIQUE (entrée de gamme, prix bas prioritaire)",
+            'premium' => "PREMIUM (haut de gamme, qualité maximale)",
+            default => "STANDARD PROFESSIONNEL (rapport qualité/prix optimal)"
+        };
+
         return <<<PARAMS
 - **Taux horaire main d'œuvre** : {$tauxHoraire}€ HT/heure
 - **Marge sur fournitures** : {$marge}% (à appliquer sur le prix d'achat)
 - **{$deplacement}**
-- **Marque préférée** (si pas de demande client spécifique) : {$marque}
+- **Marque préférée** : {$marque}
+- **Gamme de prix par défaut** : {$gammeTexte}
+
+⚠️ **RÈGLE OBLIGATOIRE POUR LE CHOIX DU MATÉRIEL** :
+1. Si le client mentionne une marque/modèle précis → UTILISER CE PRODUIT
+2. Sinon → UTILISER la marque "{$marque}" dans la gamme {$gammeTexte}
 
 **Rappel calcul prix de vente fourniture :**
 Prix vente = Prix public × 0.70 × (1 + {$marge}/100)

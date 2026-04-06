@@ -35,7 +35,7 @@
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
 
-    <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="css/app.css?v=8">
 </head>
 <body>
     <div id="app">
@@ -290,8 +290,8 @@
                             </div>
                         </div>
 
-                        <!-- Upload images -->
-                        <div class="form-group">
+                        <!-- Upload images (masqué pour l'instant) -->
+                        <div class="form-group" style="display: none;">
                             <label>
                                 <i class="ph ph-images"></i>
                                 Photos du chantier (optionnel)
@@ -306,49 +306,6 @@
                             </div>
                             <div id="imagePreview" class="image-preview"></div>
                         </div>
-
-                        <!-- Toggle V2 (test) -->
-                        <div id="v2ToggleContainer" style="margin-bottom: 1rem; padding: 0.75rem 1rem; background: #F3F4F6; border: 2px solid #D1D5DB; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s;">
-                            <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
-                                <input type="checkbox" id="useV2Toggle" style="display: none;">
-                                <span id="v2ToggleSwitch" style="width: 50px; height: 26px; background: #9CA3AF; border-radius: 26px; position: relative; transition: background 0.3s; display: inline-block;">
-                                    <span style="content: ''; position: absolute; width: 20px; height: 20px; background: white; border-radius: 50%; top: 3px; left: 3px; transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></span>
-                                </span>
-                                <span style="font-size: 0.875rem; color: #374151;">
-                                    <strong>Mode V2</strong> - IA avec marques & références
-                                </span>
-                            </label>
-                            <span id="v2Status" style="font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 4px; background: #E5E7EB; color: #6B7280;">V1</span>
-                        </div>
-                        <script>
-                        (function() {
-                            const toggle = document.getElementById('useV2Toggle');
-                            const container = document.getElementById('v2ToggleContainer');
-                            const status = document.getElementById('v2Status');
-                            const switchEl = document.getElementById('v2ToggleSwitch');
-                            const ball = switchEl.querySelector('span');
-
-                            toggle.addEventListener('change', function() {
-                                if (this.checked) {
-                                    container.style.background = '#D1FAE5';
-                                    container.style.borderColor = '#10B981';
-                                    switchEl.style.background = '#10B981';
-                                    ball.style.transform = 'translateX(24px)';
-                                    status.textContent = 'V2 ACTIF';
-                                    status.style.background = '#10B981';
-                                    status.style.color = 'white';
-                                } else {
-                                    container.style.background = '#F3F4F6';
-                                    container.style.borderColor = '#D1D5DB';
-                                    switchEl.style.background = '#9CA3AF';
-                                    ball.style.transform = 'translateX(0)';
-                                    status.textContent = 'V1';
-                                    status.style.background = '#E5E7EB';
-                                    status.style.color = '#6B7280';
-                                }
-                            });
-                        })();
-                        </script>
 
                         <!-- Boutons étape 2 -->
                         <div class="step-actions step-actions-between">
@@ -365,6 +322,51 @@
                     <!-- Fin étape 2 -->
 
                 </form>
+
+                <!-- Mini-Chat Questions (avant génération du devis) -->
+                <div id="miniChatContainer" class="mini-chat-container" style="display: none;">
+                    <div class="mini-chat-header">
+                        <h3><i class="ph ph-chat-dots"></i> Questions pour affiner le devis</h3>
+                        <div class="chat-header-right">
+                            <span id="chatProgress" class="chat-progress">0/5</span>
+                            <button type="button" id="closeChatBtn" class="btn-close-chat" title="Fermer">
+                                <i class="ph ph-x"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="chatMessages" class="chat-messages">
+                        <!-- Messages dynamiques -->
+                    </div>
+
+                    <div id="chatInputArea" class="chat-input-area">
+                        <!-- Boutons rapides (Oui/Non/Je ne sais pas) -->
+                        <div id="quickButtons" class="quick-buttons">
+                            <button type="button" class="btn-quick" data-answer="Oui">Oui</button>
+                            <button type="button" class="btn-quick" data-answer="Non">Non</button>
+                            <button type="button" class="btn-quick btn-skip" data-answer="Je ne sais pas">Je ne sais pas</button>
+                        </div>
+
+                        <!-- Input texte pour questions ouvertes -->
+                        <div id="textInputArea" class="chat-text-input" style="display: none;">
+                            <input type="text" id="chatInput" placeholder="Votre réponse..." autocomplete="off">
+                            <button type="button" id="sendBtn" class="btn-send">
+                                <i class="ph ph-paper-plane-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="chat-actions">
+                        <button type="button" id="skipAllQuestionsBtn" class="btn-secondary-small">
+                            <i class="ph ph-fast-forward"></i>
+                            Passer les questions
+                        </button>
+                        <button type="button" id="generateWithAnswersBtn" class="btn-primary" disabled>
+                            <i class="ph ph-sparkle"></i>
+                            Générer le devis
+                        </button>
+                    </div>
+                </div>
 
                 <!-- Loading state -->
                 <div id="loadingState" class="loading-state" style="display: none;">
@@ -401,13 +403,13 @@
                 </div>
 
                 <!-- Chantier -->
-                <div class="result-card">
+                <div id="chantierCard" class="result-card" style="display: none;">
                     <h3><i class="ph ph-map-pin"></i> Chantier</h3>
                     <p id="chantierPerimetre"></p>
                     <div id="chantierHypotheses" class="hypotheses-list"></div>
                 </div>
 
-                <!-- Questions -->
+                <!-- Questions (fallback si chat non utilisé) -->
                 <div id="questionsCard" class="result-card card-warning" style="display: none;">
                     <h3><i class="ph ph-warning"></i> Points à préciser</h3>
                     <ul id="questionsList"></ul>
@@ -570,7 +572,7 @@
     <div id="toastContainer" class="toast-container"></div>
 
     <script src="js/config.js?v=6"></script>
-    <script src="js/app.js?v=6"></script>
+    <script src="js/app.js?v=8"></script>
     <script>
     (function() {
         var basePath = (window.CHIFFREO_CONFIG && window.CHIFFREO_CONFIG.BASE_PATH) || "";

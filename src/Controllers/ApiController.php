@@ -8,6 +8,7 @@ use App\Services\QuotePdfRenderer;
 use App\Services\NormsService;
 use App\Services\QuotaService;
 use App\Services\ProductSearchService;
+use App\Services\QuestionGeneratorService;
 use App\Models\QuoteRepository;
 use App\Models\UserRepository;
 use App\Models\CompanyRepository;
@@ -146,6 +147,66 @@ class ApiController
     }
 
     /**
+     * POST /api/generate-questions
+     * Génère les questions contextuelles basées sur la description des travaux
+     */
+    public function generateQuestions(): void
+    {
+        // Nettoyer tout output précédent (erreurs PHP etc.)
+        if (ob_get_level()) {
+            ob_clean();
+        }
+
+        try {
+            // Authentification optionnelle pour les questions
+            // (pas de consommation API, juste de la logique locale)
+            $user = $this->auth->optionalAuth();
+
+            // Rate limiting léger basé sur IP
+            if (!$this->checkRateLimit('generate-questions')) {
+                return;
+            }
+
+            // Récupérer les données
+            $input = json_decode(file_get_contents('php://input'), true) ?? [];
+            $description = trim($input['description'] ?? '');
+            $transcription = trim($input['transcription'] ?? '');
+
+            // Combiner description et transcription
+            $fullDescription = $description;
+            if ($transcription) {
+                $fullDescription .= "\n" . $transcription;
+            }
+
+            if (empty($fullDescription)) {
+                $this->jsonSuccess([
+                    'questions' => [],
+                    'work_type' => 'general',
+                    'message' => 'Aucune description fournie'
+                ]);
+                return;
+            }
+
+            // Générer les questions
+            $questionService = new QuestionGeneratorService();
+            $result = $questionService->generateQuestions($fullDescription, 5);
+
+            $this->jsonSuccess([
+                'questions' => $result['questions'],
+                'work_type' => $result['work_type']
+            ]);
+
+        } catch (\Throwable $e) {
+            // Nettoyer output en cas d'erreur
+            if (ob_get_level()) {
+                ob_clean();
+            }
+            $this->logError('generate-questions', $e->getMessage());
+            $this->jsonError('Erreur lors de la génération des questions: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * POST /api/generate
      * Génère un devis à partir d'une description
      */
@@ -209,6 +270,21 @@ class ApiController
                     : $input['chantier'];
             }
 
+            // Récupérer les réponses du chat (pour contexte TVA)
+            $chatAnswers = [];
+            $tvaContext = [];
+            if (!empty($input['chat_answers'])) {
+                $chatAnswers = is_string($input['chat_answers'])
+                    ? json_decode($input['chat_answers'], true)
+                    : $input['chat_answers'];
+
+                // Extraire les paramètres du chat (TVA, type local, etc.)
+                if (!empty($chatAnswers)) {
+                    $questionService = new \App\Services\QuestionGeneratorService();
+                    $tvaContext = $questionService->extractParameters($chatAnswers);
+                }
+            }
+
             // Texte combiné (sans données personnelles client)
             $texteComplet = $description;
             if (!empty($transcription)) {
@@ -241,10 +317,12 @@ class ApiController
 
             // Calculer les montants avec la grille de prix
             // Le service TVA analyse automatiquement la description pour déterminer le taux
+            // Le contexte TVA provenant du chat permet de forcer certains paramètres
             $quoteWithTotals = $this->calculator->calculate(
                 $aiResponse,
                 null, // tier (gamme de prix)
-                $texteComplet // description pour calcul TVA automatique
+                $texteComplet, // description pour calcul TVA automatique
+                $tvaContext // contexte TVA du chat (logement ancien, type local, etc.)
             );
 
             // Construire le nom complet du client
@@ -371,10 +449,29 @@ class ApiController
                 return;
             }
 
+            // Récupérer les réponses du chat (pour enrichir la description et le contexte TVA)
+            $chatAnswers = [];
+            $tvaContext = [];
+            if (!empty($input['chat_answers'])) {
+                $chatAnswers = is_string($input['chat_answers'])
+                    ? json_decode($input['chat_answers'], true)
+                    : $input['chat_answers'];
+            }
+
             // Texte combiné
             $texteComplet = $description;
             if (!empty($transcription)) {
                 $texteComplet = $description . "\n\n[Transcription audio] " . $transcription;
+            }
+
+            // Ajouter les réponses du chat à la description pour OpenAI V2
+            // ET extraire les paramètres TVA
+            $questionService = new \App\Services\QuestionGeneratorService();
+            if (!empty($chatAnswers)) {
+                $texteComplet .= $questionService->formatAnswersForPrompt($chatAnswers);
+                $tvaContext = $questionService->extractParameters($chatAnswers);
+
+                // Debug: log des réponses chat et contexte TVA
             }
 
             // Images uploadées
@@ -414,11 +511,49 @@ class ApiController
                 $imageUrls
             );
 
-            // Log pour debug
-            $this->logInfo('generate-v2', 'Devis V2 généré', [
-                'fournitures' => count($quoteData['fournitures'] ?? []),
-                'total_ttc' => $quoteData['totaux']['total_ttc'] ?? 0
-            ]);
+            // Appliquer la TVA correcte basée sur le contexte du chat
+            // Le TvaService analyse la description et prend en compte les réponses du chat
+            $tvaService = new \App\Services\TvaService();
+            $tvaInfo = $tvaService->determinerTva($texteComplet, [], $tvaContext);
+            $tauxTva = $tvaInfo['taux'];
+
+            // Recalculer les totaux avec le bon taux de TVA
+            $totalHT = (float) ($quoteData['totaux']['total_ht'] ?? 0);
+            $montantTVA = round($totalHT * $tauxTva / 100, 2);
+            $totalTTC = round($totalHT + $montantTVA, 2);
+
+            // Mettre à jour les totaux dans quoteData (utiliser les bons noms de champs)
+            $quoteData['totaux']['taux_tva'] = $tauxTva;
+            $quoteData['totaux']['montant_tva'] = $montantTVA;
+            $quoteData['totaux']['total_ttc'] = $totalTTC;
+            $quoteData['remarque_tva'] = $tvaInfo['raison'] ?? null;
+
+            // Supprimer les anciens noms de champs pour éviter confusion
+            unset($quoteData['totaux']['tva_taux']);
+            unset($quoteData['totaux']['tva_montant']);
+            unset($quoteData['remarques_tva']); // Ancien nom
+
+            // Mettre à jour le taux TVA sur chaque ligne individuelle
+            foreach (['fournitures', 'main_oeuvre', 'forfaits', 'lignes'] as $section) {
+                if (!empty($quoteData[$section]) && is_array($quoteData[$section])) {
+                    foreach ($quoteData[$section] as &$ligne) {
+                        $ligne['taux_tva'] = $tauxTva;
+                    }
+                    unset($ligne);
+                }
+            }
+
+            // Mettre à jour la TVA sur le déplacement aussi
+            if (!empty($quoteData['deplacement'])) {
+                $quoteData['deplacement']['taux_tva'] = $tauxTva;
+            }
+
+            // Recalculer tva_details avec le bon taux
+            $quoteData['totaux']['tva_details'] = [[
+                'taux' => $tauxTva,
+                'base_ht' => $totalHT,
+                'montant_tva' => $montantTVA
+            ]];
 
             // Récupérer données client (optionnel)
             $clientData = [];
@@ -449,9 +584,9 @@ class ApiController
                 'ai_response' => $quoteData, // Le JSON complet V2
                 'quote_data' => $quoteData,
                 'total_ht' => $quoteData['totaux']['total_ht'] ?? 0,
-                'total_tva' => $quoteData['totaux']['tva_montant'] ?? 0,
+                'total_tva' => $quoteData['totaux']['montant_tva'] ?? 0,
                 'total_ttc' => $quoteData['totaux']['total_ttc'] ?? 0,
-                'taux_tva' => $quoteData['totaux']['tva_taux'] ?? 20.00
+                'taux_tva' => $quoteData['totaux']['taux_tva'] ?? 20.00
             ]);
 
             // Incrémenter compteur
@@ -1040,7 +1175,7 @@ class ApiController
     {
         try {
             // Authentification requise
-            $user = $this->auth->authenticate();
+            $user = $this->auth->requireAuth();
             if (!$user) {
                 $this->jsonError('Authentification requise', 401);
                 return;
@@ -1100,7 +1235,7 @@ class ApiController
     {
         try {
             // Authentification requise
-            $user = $this->auth->authenticate();
+            $user = $this->auth->requireAuth();
             if (!$user) {
                 $this->jsonError('Authentification requise', 401);
                 return;
@@ -1139,7 +1274,7 @@ class ApiController
     {
         try {
             // Authentification requise
-            $user = $this->auth->authenticate();
+            $user = $this->auth->requireAuth();
             if (!$user) {
                 $this->jsonError('Authentification requise', 401);
                 return;

@@ -243,7 +243,7 @@
         });
 
         // Pricing fields - set defaults
-        onboardingData.hourly_rate = parseFloat(hourlyRateInput.value) || 45;
+        onboardingData.hourly_rate = parseFloat(hourlyRateInput.value) || 70;
         onboardingData.product_margin = parseFloat(productMarginInput.value) || 20;
         onboardingData.supplier_discount = parseFloat(supplierDiscountInput.value) || 0;
         onboardingData.travel_type = 'free';

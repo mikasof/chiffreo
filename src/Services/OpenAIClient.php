@@ -101,8 +101,11 @@ class OpenAIClient
                 'duration' => $result['duration'] ?? null
             ]);
 
+            // Nettoyer la transcription (enlever les numéros de liste automatiques)
+            $cleanedText = $this->cleanTranscription($result['text'] ?? '');
+
             return [
-                'text' => $result['text'] ?? '',
+                'text' => $cleanedText,
                 'language' => $result['language'] ?? 'fr',
                 'duration' => $result['duration'] ?? null
             ];
@@ -111,6 +114,31 @@ class OpenAIClient
             $this->log('ERROR', 'Erreur transcription', ['error' => $e->getMessage()]);
             throw new \RuntimeException('Erreur lors de la transcription : ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Nettoie la transcription des artefacts de Whisper
+     * - Supprime les numéros de liste automatiques (1., 2., etc.)
+     * - Remplace par des tirets pour plus de lisibilité
+     */
+    private function cleanTranscription(string $text): string
+    {
+        // Pattern : numéro suivi d'un point au début de ligne ou après un saut de ligne
+        // Ex: "4. Fourniture" → "- Fourniture"
+        $text = preg_replace('/(?:^|\n)\s*\d+\.\s*/m', "\n- ", $text);
+
+        // Nettoyer les tirets en début de texte (si le premier élément a été converti)
+        $text = ltrim($text, "\n- ");
+
+        // Si le texte commence maintenant par un tiret, le garder propre
+        if (preg_match('/^[A-ZÀ-Ÿa-zà-ÿ]/', $text)) {
+            // Le texte commence par une lettre, c'est bon
+        } else {
+            // Remettre le tiret proprement si nécessaire
+            $text = preg_replace('/^\s*-\s*/', '- ', $text);
+        }
+
+        return trim($text);
     }
 
     /**

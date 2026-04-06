@@ -404,6 +404,13 @@ try {
         exit;
     }
 
+    // POST /api/generate-questions (génère les questions contextuelles avant devis)
+    if ($uri === '/api/generate-questions' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $controller = new \App\Controllers\ApiController();
+        $controller->generateQuestions();
+        exit;
+    }
+
     // POST /api/generate
     if ($uri === '/api/generate' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller = new \App\Controllers\ApiController();
