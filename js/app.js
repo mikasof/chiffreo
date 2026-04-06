@@ -1021,7 +1021,7 @@ function renderQuoteResult(data) {
             tr.dataset.index = ligneIndex;
             tr.innerHTML = `
                 <td>${escapeHtml(ligne.designation)}</td>
-                <td class="right">${ligne.quantite}</td>
+                <td class="right">${ligne.quantite} <span class="unit-label">${formatUnit(ligne.unite)}</span></td>
                 <td class="right">${formatPrice(ligne.prix_unitaire_ht)}</td>
                 <td class="right">${formatPrice(ligne.total_ligne_ht)}</td>
                 <td class="center">${ligne.taux_tva || 20}%</td>
@@ -1371,6 +1371,23 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+/**
+ * Formate l'unité pour l'affichage
+ * @param {string} unite - Code de l'unité (u, m, h, lot, forfait)
+ * @returns {string} Unité formatée pour affichage
+ */
+function formatUnit(unite) {
+    const unitLabels = {
+        'u': 'u',       // unité
+        'm': 'm',       // mètre
+        'ml': 'ml',     // mètre linéaire
+        'h': 'h',       // heure
+        'lot': 'lot',   // lot
+        'forfait': ''   // pas d'affichage pour forfait (déjà dans désignation)
+    };
+    return unitLabels[unite] || unite || 'u';
 }
 
 // === Enregistrement vocal dans la modale ===
@@ -1816,7 +1833,7 @@ function renderQuoteLines() {
             tr.dataset.index = item.originalIndex;
             tr.innerHTML = `
                 <td>${escapeHtml(item.designation)}</td>
-                <td class="right">${item.quantite}</td>
+                <td class="right">${item.quantite} <span class="unit-label">${formatUnit(item.unite)}</span></td>
                 <td class="right">${formatPrice(item.prix_unitaire_ht)}</td>
                 <td class="right">${formatPrice(item.total_ligne_ht)}</td>
                 <td class="center">${item.taux_tva || 20}%</td>

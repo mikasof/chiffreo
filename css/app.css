@@ -1296,6 +1296,12 @@ textarea::placeholder {
     vertical-align: top;
 }
 
+.lignes-table .unit-label {
+    color: var(--color-text-muted);
+    font-size: 0.85em;
+    margin-left: 2px;
+}
+
 .lignes-table .category-row {
     background: var(--color-primary);
     color: white;
