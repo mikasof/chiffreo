@@ -142,153 +142,6 @@ class OpenAIClient
     }
 
     /**
-     * Génère un devis structuré via OpenAI avec Structured Outputs
-     *
-     * @param string $description Description du chantier
-     * @param string|null $transcription Transcription audio optionnelle
-     * @param array $imageUrls URLs des images optionnelles (base64 ou URLs)
-     * @return array Le devis structuré
-     * @throws \RuntimeException
-     */
-    public function generateQuoteJson(
-        string $description,
-        ?string $transcription = null,
-        array $imageUrls = []
-    ): array {
-        $this->log('INFO', 'Début génération devis', [
-            'description_length' => strlen($description),
-            'has_transcription' => !empty($transcription),
-            'images_count' => count($imageUrls)
-        ]);
-
-        // Charger la configuration du schéma
-        $schemaConfig = require __DIR__ . '/../../config/quote_schema.php';
-
-        // Analyser la description pour détecter les normes et équipements obligatoires
-        $fullText = $description . ($transcription ? ' ' . $transcription : '');
-        $normsContext = $this->normsService->generatePromptContext($fullText);
-
-        $this->log('INFO', 'Normes détectées', [
-            'has_norms' => !empty($normsContext),
-            'norms_length' => strlen($normsContext)
-        ]);
-
-        // Construire le prompt utilisateur avec le contexte des normes
-        $userPrompt = $this->buildUserPrompt(
-            $schemaConfig['user_prompt_template'],
-            $description,
-            $transcription,
-            $imageUrls,
-            $normsContext
-        );
-
-        // Construire les messages
-        $messages = [
-            [
-                'role' => 'system',
-                'content' => $schemaConfig['system_prompt']
-            ]
-        ];
-
-        // Si on a des images, on utilise le format multimodal
-        if (!empty($imageUrls)) {
-            $content = [
-                ['type' => 'text', 'text' => $userPrompt]
-            ];
-
-            foreach ($imageUrls as $imageUrl) {
-                $content[] = [
-                    'type' => 'image_url',
-                    'image_url' => [
-                        'url' => $imageUrl,
-                        'detail' => 'auto'
-                    ]
-                ];
-            }
-
-            $messages[] = [
-                'role' => 'user',
-                'content' => $content
-            ];
-        } else {
-            $messages[] = [
-                'role' => 'user',
-                'content' => $userPrompt
-            ];
-        }
-
-        try {
-            $response = $this->httpClient->post('chat/completions', [
-                'json' => [
-                    'model' => $this->chatModel,
-                    'messages' => $messages,
-                    'response_format' => [
-                        'type' => 'json_schema',
-                        'json_schema' => $schemaConfig['json_schema']
-                    ],
-                    'temperature' => 0.3, // Faible pour plus de cohérence
-                    'max_tokens' => 4000
-                ]
-            ]);
-
-            $result = json_decode($response->getBody()->getContents(), true);
-
-            // Extraire le contenu JSON de la réponse
-            $content = $result['choices'][0]['message']['content'] ?? '';
-            $quoteData = json_decode($content, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \RuntimeException('Réponse OpenAI non valide JSON');
-            }
-
-            $this->log('INFO', 'Génération devis réussie', [
-                'taches_count' => count($quoteData['taches'] ?? []),
-                'lignes_count' => count($quoteData['lignes'] ?? []),
-                'questions_count' => count($quoteData['questions_a_poser'] ?? [])
-            ]);
-
-            return $quoteData;
-
-        } catch (GuzzleException $e) {
-            $this->log('ERROR', 'Erreur génération devis', ['error' => $e->getMessage()]);
-            throw new \RuntimeException('Erreur lors de la génération : ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Construit le prompt utilisateur à partir du template
-     */
-    private function buildUserPrompt(
-        string $template,
-        string $description,
-        ?string $transcription,
-        array $imageUrls,
-        string $normsContext = ''
-    ): string {
-        $transcriptionText = '';
-        if (!empty($transcription)) {
-            $transcriptionText = "### Transcription audio\n" . $transcription;
-        }
-
-        $imagesText = '';
-        if (!empty($imageUrls)) {
-            $imagesText = "### Images fournies\n" . count($imageUrls) . " image(s) jointe(s) pour référence.";
-        }
-
-        // Ajouter le contexte des normes à la description
-        $fullDescription = $description;
-        if (!empty($normsContext)) {
-            $fullDescription .= "\n\n" . $normsContext;
-        }
-
-        return str_replace(
-            ['{description}', '{transcription}', '{contexte_images}'],
-            [$fullDescription, $transcriptionText, $imagesText],
-            $template
-        );
-    }
-
-    /**
      * Parse une ligne de devis dictée et extrait les données structurées
      *
      * @param string $text Texte transcrit (ex: "15 mètres de câble R2V à 3 euros le mètre")
@@ -590,6 +443,9 @@ PROMPT;
                 'Souhaitez-vous des prises USB intégrées ?'
             ];
 
+            // Appliquer la correction des tarifs utilisateur
+            $quoteData = $this->correctUserPricing($quoteData, $userParams);
+
             return $quoteData;
         }
 
@@ -686,6 +542,10 @@ PROMPT;
             // === ÉTAPE 2 : VÉRIFICATION ET COMPLÉMENT ===
             $quoteData = $this->verifyAndCompleteQuote($quoteData, $description, $promptConfig, $userParams);
 
+            // === CORRECTION TARIFS UTILISATEUR ===
+            // Force les tarifs utilisateur (taux horaire + déplacement)
+            $quoteData = $this->correctUserPricing($quoteData, $userParams);
+
             // Log du résultat final
             $this->log('INFO', 'Génération devis V2 réussie (après vérification)', [
                 'fournitures_count' => count($quoteData['fournitures'] ?? []),
@@ -701,6 +561,119 @@ PROMPT;
             $this->log('ERROR', 'Erreur génération devis V2', ['error' => $e->getMessage()]);
             throw new \RuntimeException('Erreur lors de la génération V2 : ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Corrige les tarifs utilisateur (taux horaire + déplacement)
+     * Force les valeurs utilisateur même si OpenAI a inventé d'autres valeurs
+     *
+     * @param array $quoteData Le devis généré
+     * @param array $userParams Les paramètres utilisateur
+     * @return array Le devis avec les tarifs corrigés
+     */
+    private function correctUserPricing(array $quoteData, array $userParams): array
+    {
+        // DEBUG: Afficher les paramètres reçus
+        $this->log('DEBUG', '=== CORRECTION TARIFS - PARAMÈTRES REÇUS ===', [
+            'hourly_rate' => $userParams['hourly_rate'] ?? 'NON DÉFINI',
+            'travel_type' => $userParams['travel_type'] ?? 'NON DÉFINI',
+            'travel_fixed_amount' => $userParams['travel_fixed_amount'] ?? 'NON DÉFINI'
+        ]);
+
+        $userHourlyRate = (float) ($userParams['hourly_rate'] ?? 70);
+        $totalMainOeuvreHT = 0;
+
+        $this->log('DEBUG', 'Taux horaire à appliquer: ' . $userHourlyRate . '€');
+
+        // === 1. Corriger le taux horaire sur chaque ligne de main d'œuvre ===
+        if (!empty($quoteData['main_oeuvre']) && is_array($quoteData['main_oeuvre'])) {
+            foreach ($quoteData['main_oeuvre'] as $key => $ligne) {
+                $heures = (float) ($ligne['heures'] ?? 0);
+
+                // Forcer le taux horaire utilisateur
+                $quoteData['main_oeuvre'][$key]['taux_horaire'] = $userHourlyRate;
+
+                // Recalculer le total de la ligne
+                $newTotal = round($heures * $userHourlyRate, 2);
+                $quoteData['main_oeuvre'][$key]['total_ligne_ht'] = $newTotal;
+
+                $totalMainOeuvreHT += $newTotal;
+            }
+        }
+
+        // === 2. Corriger le déplacement selon les paramètres utilisateur ===
+        $travelType = $userParams['travel_type'] ?? 'fixed';
+        $totalDeplacementHT = 0;
+
+        if (isset($quoteData['deplacement'])) {
+            switch ($travelType) {
+                case 'free':
+                    // Déplacement gratuit
+                    $quoteData['deplacement']['type'] = 'gratuit';
+                    $quoteData['deplacement']['montant_ht'] = 0;
+                    $quoteData['deplacement']['detail'] = 'Gratuit (rayon ' . ($userParams['travel_free_radius'] ?? 20) . ' km)';
+                    $totalDeplacementHT = 0;
+                    break;
+
+                case 'fixed':
+                    // Forfait fixe
+                    $forfait = (float) ($userParams['travel_fixed_amount'] ?? 30);
+                    $quoteData['deplacement']['type'] = 'forfait';
+                    $quoteData['deplacement']['montant_ht'] = $forfait;
+                    $quoteData['deplacement']['detail'] = 'Forfait déplacement';
+                    $totalDeplacementHT = $forfait;
+                    break;
+
+                case 'per_km':
+                    // Au kilomètre - garder le détail si présent, sinon forfait par défaut
+                    $prixKm = (float) ($userParams['travel_per_km'] ?? 0.50);
+                    $quoteData['deplacement']['type'] = 'km';
+                    // Si OpenAI a estimé une distance, la garder, sinon mettre un forfait
+                    if (!empty($quoteData['deplacement']['detail']) && preg_match('/(\d+)\s*km/i', $quoteData['deplacement']['detail'], $matches)) {
+                        $distance = (int) $matches[1];
+                        $totalDeplacementHT = round($distance * $prixKm, 2);
+                        $quoteData['deplacement']['montant_ht'] = $totalDeplacementHT;
+                        $quoteData['deplacement']['detail'] = $distance . ' km × ' . $prixKm . '€';
+                    } else {
+                        // Pas de distance estimée, utiliser forfait par défaut
+                        $forfaitDefaut = (float) ($userParams['travel_fixed_amount'] ?? 30);
+                        $quoteData['deplacement']['montant_ht'] = $forfaitDefaut;
+                        $totalDeplacementHT = $forfaitDefaut;
+                    }
+                    break;
+            }
+        }
+
+        $this->log('INFO', 'Correction tarifs utilisateur appliquée', [
+            'taux_horaire' => $userHourlyRate,
+            'total_mo' => $totalMainOeuvreHT,
+            'type_deplacement' => $travelType,
+            'total_deplacement' => $totalDeplacementHT
+        ]);
+
+        // === 3. Mettre à jour les totaux ===
+        if (isset($quoteData['totaux'])) {
+            $quoteData['totaux']['total_main_oeuvre_ht'] = $totalMainOeuvreHT;
+            $quoteData['totaux']['total_deplacement_ht'] = $totalDeplacementHT;
+
+            // Recalculer total_ht
+            $totalFournitures = (float) ($quoteData['totaux']['total_fournitures_ht'] ?? 0);
+            $totalHT = $totalFournitures + $totalMainOeuvreHT + $totalDeplacementHT;
+            $quoteData['totaux']['total_ht'] = round($totalHT, 2);
+
+            // Recalculer TVA et TTC
+            $tauxTVA = (float) ($quoteData['totaux']['tva_taux'] ?? 20);
+            $tvaMontant = round($totalHT * $tauxTVA / 100, 2);
+            $quoteData['totaux']['tva_montant'] = $tvaMontant;
+            $quoteData['totaux']['total_ttc'] = round($totalHT + $tvaMontant, 2);
+        }
+
+        // === 4. Mettre à jour les paramètres appliqués ===
+        if (isset($quoteData['parametres_appliques'])) {
+            $quoteData['parametres_appliques']['taux_horaire_utilise'] = $userHourlyRate;
+        }
+
+        return $quoteData;
     }
 
     /**

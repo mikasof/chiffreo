@@ -278,13 +278,13 @@ class UserRepository
         }
 
         return [
-            'hourly_rate' => (float) $row['hourly_rate'],
-            'product_margin' => (float) $row['product_margin'],
+            'hourly_rate' => (float) ($row['hourly_rate'] ?: 70.00),
+            'product_margin' => (float) ($row['product_margin'] ?: 20.00),
             'supplier_discount' => (float) ($row['supplier_discount'] ?? 0),
-            'travel_type' => $row['travel_type'],
-            'travel_fixed_amount' => (float) $row['travel_fixed_amount'],
-            'travel_per_km' => (float) $row['travel_per_km'],
-            'travel_free_radius' => (int) $row['travel_free_radius']
+            'travel_type' => $row['travel_type'] ?: 'free',
+            'travel_fixed_amount' => (float) ($row['travel_fixed_amount'] ?: 30.00),
+            'travel_per_km' => (float) ($row['travel_per_km'] ?: 0.50),
+            'travel_free_radius' => (int) ($row['travel_free_radius'] ?: 20)
         ];
     }
 

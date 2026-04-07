@@ -411,14 +411,7 @@ try {
         exit;
     }
 
-    // POST /api/generate
-    if ($uri === '/api/generate' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        $controller = new \App\Controllers\ApiController();
-        $controller->generate();
-        exit;
-    }
-
-    // POST /api/generate-v2 (nouveau système multi-agents)
+    // POST /api/generate-v2 (système de génération de devis)
     if ($uri === '/api/generate-v2' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller = new \App\Controllers\ApiController();
         $controller->generateV2();

@@ -13,9 +13,9 @@ return [
     'MO_H' => [
         'label' => 'Main d\'oeuvre (heure)',
         'unit' => 'h',
-        'price_low' => 35.00,
-        'price_mid' => 45.00,
-        'price_high' => 55.00,
+        'price_low' => 55.00,
+        'price_mid' => 70.00,
+        'price_high' => 85.00,
         'category' => 'main_oeuvre'
     ],
     'MO_DEPLACEMENT' => [

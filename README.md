@@ -363,7 +363,7 @@ chiffreo/
 | Code | Description | Unité | Prix HT |
 |------|-------------|-------|---------|
 | **Main d'oeuvre** |||
-| MO_H | Main d'oeuvre horaire | h | 45.00 € |
+| MO_H | Main d'oeuvre horaire | h | 70.00 € |
 | MO_DEPLACEMENT | Forfait déplacement | forfait | 35.00 € |
 | MO_MISE_EN_SERVICE | Mise en service | forfait | 80.00 € |
 | **Câblage** |||

@@ -85,11 +85,11 @@ $tests[] = test('Grille de prix chargée', function () {
     return true;
 });
 
-// === Test 7: JSON Schema ===
-$tests[] = test('JSON Schema configuré', function () {
-    $schema = require __DIR__ . '/../config/quote_schema.php';
-    if (!isset($schema['json_schema']) || !isset($schema['system_prompt'])) {
-        throw new Exception("Configuration quote_schema.php incomplète");
+// === Test 7: Quote Prompt V2 ===
+$tests[] = test('Quote Prompt V2 configuré', function () {
+    $config = require __DIR__ . '/../config/quote_prompt_v2.php';
+    if (!isset($config['system_prompt']) || !isset($config['user_prompt_template'])) {
+        throw new Exception("Configuration quote_prompt_v2.php incomplète");
     }
     return true;
 });
@@ -134,9 +134,9 @@ $tests[] = test('Service QuoteCalculator', function () {
         throw new Exception("Calcul des totaux échoué");
     }
 
-    // 2h * 45€ = 90€ HT, TVA 18€, TTC 108€
-    if ($result['totaux']['total_ht'] !== 90.0) {
-        throw new Exception("Calcul HT incorrect: attendu 90, obtenu " . $result['totaux']['total_ht']);
+    // 2h * 70€ = 140€ HT, TVA 28€, TTC 168€
+    if ($result['totaux']['total_ht'] !== 140.0) {
+        throw new Exception("Calcul HT incorrect: attendu 140, obtenu " . $result['totaux']['total_ht']);
     }
 
     return true;

@@ -207,202 +207,6 @@ class ApiController
     }
 
     /**
-     * POST /api/generate
-     * Génère un devis à partir d'une description
-     */
-    public function generate(): void
-    {
-        try {
-            // Rate limiting
-            if (!$this->checkRateLimit('generate')) {
-                return;
-            }
-
-            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                $this->jsonError('Méthode non autorisée', 405);
-                return;
-            }
-
-            // Authentification optionnelle (mais requise pour sauvegarder)
-            $user = $this->auth->optionalAuth();
-            $userId = $this->auth->getUserId();
-            $companyId = $this->auth->getCompanyId();
-
-            // Si connecté, vérifier le quota (basé sur la company)
-            if ($user) {
-                if (!$this->quotaService->canCreateQuote($user)) {
-                    $this->jsonError('Quota mensuel atteint. Passez au plan Pro pour des devis illimités.', 403);
-                    return;
-                }
-            }
-
-            // Récupérer les données
-            $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-
-            if (strpos($contentType, 'application/json') !== false) {
-                $input = json_decode(file_get_contents('php://input'), true);
-            } else {
-                // multipart/form-data pour fichiers
-                $input = $_POST;
-            }
-
-            $description = trim($input['description'] ?? '');
-            $transcription = trim($input['transcription'] ?? '');
-
-            if (empty($description) && empty($transcription)) {
-                $this->jsonError('Description ou transcription requise', 400);
-                return;
-            }
-
-            // Récupérer les données client (JAMAIS envoyées à l'IA)
-            $clientData = [];
-            if (!empty($input['client'])) {
-                $clientData = is_string($input['client'])
-                    ? json_decode($input['client'], true)
-                    : $input['client'];
-            }
-
-            // Récupérer les données chantier
-            $chantierData = [];
-            if (!empty($input['chantier'])) {
-                $chantierData = is_string($input['chantier'])
-                    ? json_decode($input['chantier'], true)
-                    : $input['chantier'];
-            }
-
-            // Récupérer les réponses du chat (pour contexte TVA)
-            $chatAnswers = [];
-            $tvaContext = [];
-            if (!empty($input['chat_answers'])) {
-                $chatAnswers = is_string($input['chat_answers'])
-                    ? json_decode($input['chat_answers'], true)
-                    : $input['chat_answers'];
-
-                // Extraire les paramètres du chat (TVA, type local, etc.)
-                if (!empty($chatAnswers)) {
-                    $questionService = new \App\Services\QuestionGeneratorService();
-                    $tvaContext = $questionService->extractParameters($chatAnswers);
-                }
-            }
-
-            // Texte combiné (sans données personnelles client)
-            $texteComplet = $description;
-            if (!empty($transcription)) {
-                $texteComplet = $description . "\n\n[Transcription audio] " . $transcription;
-            }
-
-            // Gérer les images uploadées (optionnel)
-            $imageUrls = [];
-            if (!empty($_FILES['images'])) {
-                $imageUrls = $this->processUploadedImages($_FILES['images']);
-            }
-
-            // Appeler OpenAI pour générer le devis
-            $aiResponse = $this->openAI->generateQuoteJson(
-                $texteComplet,
-                !empty($transcription) ? $transcription : null,
-                $imageUrls
-            );
-
-            // Récupérer les paramètres de tarification de l'utilisateur
-            $userPricing = $this->userRepo->getPricing($userId);
-
-            // Configurer le calculateur avec les paramètres utilisateur
-            $this->calculator->setUserPricing($userPricing);
-
-            // Mode détail si demandé (pour debug/test)
-            if (!empty($input['show_details']) || !empty($input['debug'])) {
-                $this->calculator->setShowDetails(true);
-            }
-
-            // Calculer les montants avec la grille de prix
-            // Le service TVA analyse automatiquement la description pour déterminer le taux
-            // Le contexte TVA provenant du chat permet de forcer certains paramètres
-            $quoteWithTotals = $this->calculator->calculate(
-                $aiResponse,
-                null, // tier (gamme de prix)
-                $texteComplet, // description pour calcul TVA automatique
-                $tvaContext // contexte TVA du chat (logement ancien, type local, etc.)
-            );
-
-            // Construire le nom complet du client
-            $clientName = null;
-            if (!empty($clientData)) {
-                $clientName = trim(($clientData['prenom'] ?? '') . ' ' . ($clientData['nom'] ?? ''));
-                if (empty($clientName)) {
-                    $clientName = $clientData['nom'] ?? null;
-                }
-            }
-
-            // Sauvegarder en base de données
-            $reference = $this->quoteRepo->generateReference();
-            $quoteId = $this->quoteRepo->create([
-                'reference' => $reference,
-                'company_id' => $companyId,
-                'user_id' => $userId,
-                // Infos client (stockées directement sur le devis)
-                'client_name' => $clientName,
-                'client_company' => $clientData['societe'] ?? null,
-                'client_email' => $clientData['email'] ?? null,
-                'client_phone' => $clientData['telephone'] ?? null,
-                'client_address' => $clientData['adresse'] ?? null,
-                // Infos chantier
-                'titre' => $quoteWithTotals['chantier']['titre'] ?? 'Devis travaux électriques',
-                'localisation' => $quoteWithTotals['chantier']['localisation'] ?? null,
-                'perimetre' => $quoteWithTotals['chantier']['perimetre'] ?? null,
-                'chantier_adresse' => $chantierData['adresse'] ?? null,
-                'chantier_code_postal' => $chantierData['codePostal'] ?? null,
-                'chantier_ville' => $chantierData['ville'] ?? null,
-                // Contenu
-                'description_originale' => $texteComplet,
-                'transcription_audio' => $transcription ?: null,
-                'ai_response' => $aiResponse,
-                'quote_data' => $quoteWithTotals,
-                // Totaux
-                'total_ht' => $quoteWithTotals['totaux']['total_ht'] ?? 0,
-                'total_tva' => $quoteWithTotals['totaux']['montant_tva'] ?? 0,
-                'total_ttc' => $quoteWithTotals['totaux']['total_ttc'] ?? 0,
-                'taux_tva' => $quoteWithTotals['totaux']['taux_tva'] ?? 20.00
-            ]);
-
-            // Incrémenter le compteur de devis de la company
-            if ($companyId) {
-                $this->companyRepo->incrementQuoteCount($companyId);
-                // Marquer le premier devis si c'est le cas
-                if ($userId) {
-                    $this->userRepo->markFirstQuoteDone($userId);
-                }
-            }
-
-            $this->logInfo('generate', 'Devis créé', [
-                'id' => $quoteId,
-                'ref' => $reference,
-                'client_name' => $clientName,
-                'user_id' => $userId,
-                'company_id' => $companyId
-            ]);
-
-            $response = [
-                'id' => $quoteId,
-                'reference' => $reference,
-                'quote' => $quoteWithTotals,
-                'pdf_url' => '/pdf/quote/' . $quoteId
-            ];
-
-            // Inclure info client si présent (pour confirmation UI)
-            if ($clientName) {
-                $response['client_name'] = $clientName;
-            }
-
-            $this->jsonSuccess($response, 201);
-
-        } catch (\Exception $e) {
-            $this->logError('generate', $e->getMessage());
-            $this->jsonError('Erreur lors de la génération: ' . $e->getMessage(), 500);
-        }
-    }
-
-    /**
      * POST /api/generate-v2
      * Génère un devis avec le nouveau système multi-agents
      * OpenAI gère tout : analyse, normes, matériel, prix avec marques/références
@@ -484,6 +288,13 @@ class ApiController
             $userParams = [];
             if ($userId) {
                 $userPricing = $this->userRepo->getPricing($userId);
+
+                // DEBUG: Logger les valeurs récupérées de la BDD
+                $this->log('DEBUG', 'generate-v2', 'Paramètres BDD', [
+                    'user_id' => $userId,
+                    'raw_pricing' => $userPricing
+                ]);
+
                 $userParams = [
                     'hourly_rate' => $userPricing['hourly_rate'] ?? 70,
                     'product_margin' => $userPricing['product_margin'] ?? 20,
@@ -493,6 +304,9 @@ class ApiController
                     'travel_free_radius' => $userPricing['travel_free_radius'] ?? 20,
                     'preferred_brand' => $userPricing['preferred_brand'] ?? 'Schneider Electric',
                 ];
+
+                // DEBUG: Logger les valeurs finales utilisées
+                $this->log('DEBUG', 'generate-v2', 'Paramètres finaux', $userParams);
             } else {
                 // Valeurs par défaut pour test sans auth
                 $userParams = [

@@ -330,7 +330,7 @@ CREATE TABLE users (
     onboarding_completed BOOLEAN DEFAULT FALSE,
 
     -- Tarification (configurée à l'onboarding)
-    hourly_rate DECIMAL(10,2) DEFAULT 45.00,
+    hourly_rate DECIMAL(10,2) DEFAULT 70.00,
     product_margin DECIMAL(5,2) DEFAULT 20.00,
     supplier_discount DECIMAL(5,2) DEFAULT 0,
     travel_type ENUM('free', 'fixed', 'per_km') DEFAULT 'fixed',

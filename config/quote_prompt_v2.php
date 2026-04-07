@@ -100,6 +100,12 @@ Liste EXHAUSTIVE des tâches à considérer (ajoute celles qui s'appliquent) :
 
 Pour CHAQUE tâche, estime le temps réaliste (base: électricien expérimenté).
 
+⚠️ **RÈGLE ABSOLUE POUR LA MAIN D'ŒUVRE** ⚠️
+Tu DOIS utiliser EXACTEMENT le taux horaire indiqué dans les PARAMÈTRES DE L'ENTREPRISE.
+- NE JAMAIS inventer un taux horaire (pas de 45€, 50€, 55€ si non spécifié)
+- Le taux horaire est une donnée FOURNIE, pas à deviner
+- Chaque ligne de main d'œuvre DOIT avoir le taux_horaire = valeur des paramètres
+
 Exemple pour une rénovation complète :
 - Dépose installation existante : 8h
 - Réalisation saignées : 16-24h
@@ -489,7 +495,7 @@ PROMPT,
                             ],
                             'taux_horaire' => [
                                 'type' => 'number',
-                                'description' => 'Taux horaire HT'
+                                'description' => 'DOIT être égal au taux horaire des PARAMÈTRES (ne pas inventer)'
                             ],
                             'total_ligne_ht' => [
                                 'type' => 'number',
@@ -540,7 +546,7 @@ PROMPT,
                     'properties' => [
                         'taux_horaire_utilise' => [
                             'type' => 'number',
-                            'description' => 'Taux horaire MO appliqué'
+                            'description' => 'DOIT être identique au taux des PARAMÈTRES fournis'
                         ],
                         'marge_fournitures_pourcent' => [
                             'type' => 'number',
@@ -638,7 +644,12 @@ PROMPT,
         };
 
         return <<<PARAMS
-- **Taux horaire main d'œuvre** : {$tauxHoraire}€ HT/heure
+## PARAMÈTRES DE TARIFICATION (OBLIGATOIRES)
+
+🔴 **TAUX HORAIRE MAIN D'ŒUVRE : {$tauxHoraire}€ HT/heure**
+→ UTILISE CE TAUX EXACT pour TOUTES les lignes de main d'œuvre
+→ N'invente JAMAIS un autre taux (pas de 45€, 50€, 55€)
+
 - **Marge sur fournitures** : {$marge}% (à appliquer sur le prix d'achat)
 - **{$deplacement}**
 - **Marque préférée** : {$marque}
@@ -650,6 +661,9 @@ PROMPT,
 
 **Rappel calcul prix de vente fourniture :**
 Prix vente = Prix public × 0.70 × (1 + {$marge}/100)
+
+**Rappel calcul main d'œuvre :**
+Total ligne MO = heures × {$tauxHoraire}€
 PARAMS;
     }
 ];
